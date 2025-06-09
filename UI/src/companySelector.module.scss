@@ -1,0 +1,22 @@
+﻿.companyDropdownRow {
+    // width is calculated based on font scale determined by empirical testing.
+    width:              calc(325rem + 250rem * (var(--fontScale) - 1));
+    flex-direction:     row;
+    display:            flex;
+}
+
+.companyDropdownText {
+    font-size:          var(--fontSizeXS);
+    color:              var(--textColorDimmer);
+}
+
+.companyDropdownItemNormal {
+    padding-top:        3rem;
+    padding-bottom:     3rem;
+}
+
+.companyDropdownItemSelected {
+    padding-top:        3rem;
+    padding-bottom:     3rem;
+    background-color:   rgb(0, 0, 0, 1);
+}
