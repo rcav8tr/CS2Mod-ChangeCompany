@@ -41,14 +41,14 @@ namespace ChangeCompany
         public void Write(IJsonWriter writer)
         {
             // Company prefab is not needed by the UI, just the resources.
-			writer.TypeBegin(ModAssemblyInfo.Name + ".CompanyResourceData");
-			writer.PropertyName("resourceOutput");
-			writer.Write(ResourceOutput.ToString());
-			writer.PropertyName("resourceInput1");
-			writer.Write(ResourceInput1.ToString());
-			writer.PropertyName("resourceInput2");
-			writer.Write(ResourceInput2.ToString());
-			writer.TypeEnd();
+            writer.TypeBegin(ModAssemblyInfo.Name + ".CompanyResourceData");
+            writer.PropertyName("resourceOutput");
+            writer.Write(ResourceOutput.ToString());
+            writer.PropertyName("resourceInput1");
+            writer.Write(ResourceInput1.ToString());
+            writer.PropertyName("resourceInput2");
+            writer.Write(ResourceInput2.ToString());
+            writer.TypeEnd();
         }
     }
 }

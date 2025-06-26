@@ -20,7 +20,7 @@ using UnityEngine.Scripting;
 namespace ChangeCompany
 {
     /// <summary>
-    /// Remove a company from a property, create a new company, and assign the new company to a property.
+    /// Change the company on a property.
     /// </summary>
     public partial class ChangeCompanySystem : GameSystemBase
     {
@@ -36,15 +36,15 @@ namespace ChangeCompany
         private EntityArchetype _pathTargetMovedEventArchetype;
 
         // Entity queries.
-        private EntityQuery _economyParameterDataQuery;
-        private EntityQuery _workProviderParameterDataQuery;
+        private EntityQuery     _economyParameterDataQuery;
+        private EntityQuery     _workProviderParameterDataQuery;
 
         // Data from ChangeCompanySection for changing the company on a property
-        private readonly object _changeCompanyLock = new object();
-        private Entity _changeCompanyNewCompanyPrefab;      // The prefab to use for the new company.
-        private Entity _changeCompanyPropertyEntity;        // The property entity to be changed.
-        private Entity _changeCompanyPropertyPrefab;        // The property prefab to be changed.
-        private PropertyType _changeCompanyPropertyType;    // The property type of the property to be changed.
+        private readonly object _changeCompanyLock = new object();  // Used to lock the thread while writing or reading the change company data.
+        private Entity          _changeCompanyNewCompanyPrefab;     // The prefab to use for the new company.
+        private Entity          _changeCompanyPropertyEntity;       // The property entity to be changed.
+        private Entity          _changeCompanyPropertyPrefab;       // The property prefab to be changed.
+        private PropertyType    _changeCompanyPropertyType;         // The property type of the property to be changed.
 
         // Data for post-change initialization.
         private Entity _postChangePropertyEntity;
@@ -113,7 +113,7 @@ namespace ChangeCompany
         /// <summary>
         /// Called by the game when a GameMode is about to be loaded.
         /// </summary>
-		[Preserve]
+        [Preserve]
         protected override void OnGamePreload(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
         {
             base.OnGamePreload(purpose, mode);
@@ -125,7 +125,7 @@ namespace ChangeCompany
         /// <summary>
         /// Called by the game when a GameMode is done being loaded.
         /// </summary>
-		[Preserve]
+        [Preserve]
         protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
         {
             base.OnGameLoadingComplete(purpose, mode);
@@ -199,7 +199,7 @@ namespace ChangeCompany
                 return;
             }
 
-            // Check if post-change initialization should be performed.
+            // Check if post-change initialization should be performed from the previous frame.
             CheckPostChangeInitialization();
 
             // Lock the thread while reading change company data.
@@ -322,11 +322,12 @@ namespace ChangeCompany
             EntityCommandBuffer entityCommandbuffer)
         {
             // Spawn a new company using the ArchetypeData of the company prefab.
-            // IMPORTANT:  The new company entity is only temporary (i.e. not realized) until the entity command buffer plays back.
-            // Therefore, operations can be performed on the new company entity only using the entity command buffer.
             // Logic adapted from CommercialSpawnSystem.SpawnCompanyJob and IndustrialSpawnSystem.CheckSpawnJob.
             ArchetypeData newCompanyArchetypeData = EntityManager.GetComponentData<ArchetypeData>(newCompanyPrefab);
             Entity newCompanyEntity = entityCommandbuffer.CreateEntity(newCompanyArchetypeData.m_Archetype);
+
+            // IMPORTANT:  The new company entity is only temporary (i.e. not realized) until the entity command buffer is played back.
+            // Therefore, operations can be performed on the new company entity only using the entity command buffer.
             
             // Set the prefab on the new company.
             // All new companies already have a PrefabRef that can be set.
@@ -448,7 +449,7 @@ namespace ChangeCompany
             else
             {
                 // This should never happen.
-                Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetRentPricePerRenter)} unable to get lot size");
+                Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetRentPricePerRenter)} unable to get lot size for property prefab={_prefabSystem.GetPrefabName(propertyPrefab)}");
             }
 
             // Get land value.
@@ -461,7 +462,7 @@ namespace ChangeCompany
             else
             {
                 // This should never happen.
-                Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetRentPricePerRenter)} unable to get land value");
+                Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetRentPricePerRenter)} unable to get land value for property entity={propertyEntity}");
             }
 
             // Get area type.

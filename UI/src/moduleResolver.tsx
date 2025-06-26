@@ -3,8 +3,8 @@ import { getModule                                                      } from "
 import { ClassProps, FocusKey, FormattedParagraphsProps, InfoRowProps   } from "cs2/ui";
 import { ReactNode                                                      } from 'react';
 
-// When attempting to use the game's InfoSectionProps from ui.d.ts directly, ChangeCompanyComponent has a compile error,
-// something about property 'children' does not exist in InfoSectionProps.
+// When attempting to use the game's InfoSectionProps from ui.d.ts directly, there is a compile error:
+// Property 'children' does not exist on type ... InfoSectionProps.
 // So copy the game's InfoSectionProps here but include children.
 export interface InfoSectionProps extends ClassProps
 {

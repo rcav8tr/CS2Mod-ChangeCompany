@@ -48,20 +48,21 @@ export const ChangeCompanyComponent = (componentList: any): any =>
         const changeNowLabel: string = translate(mod.id + ".ChangeNow"    ) || "Change Now";
 
         // Get the game's translated text for left and right headings based on property type.
-        let headingLeftSuffix:  string | null = null;
-        let headingRightSuffix: string | null = null;
+        let headingSuffixLeft:  string | null = null;
+        let headingSuffixRight: string | null = null;
         switch (props.propertyType)
         {
-            case PropertyType.Commercial: headingLeftSuffix = "SELLS";    headingRightSuffix = "REQUIRES"; break;
-            case PropertyType.Industrial:
-            case PropertyType.Office:     headingLeftSuffix = "PRODUCES"; headingRightSuffix = "REQUIRES"; break;
-            case PropertyType.Storage:    headingLeftSuffix = "STORES";                                    break;
+            case PropertyType.Commercial: headingSuffixLeft = "SELLS";    headingSuffixRight = "REQUIRES"; break;
+            case PropertyType.Industrial: headingSuffixLeft = "PRODUCES"; headingSuffixRight = "REQUIRES"; break;
+            case PropertyType.Office:     headingSuffixLeft = "PRODUCES"; headingSuffixRight = "REQUIRES"; break;
+            case PropertyType.Storage:    headingSuffixLeft = "STORES";                                    break;
         }
-        const headingLeft:  string = headingLeftSuffix  ? translate("SelectedInfoPanel.COMPANY_" + headingLeftSuffix ) || headingLeftSuffix  : "";
-        const headingRight: string = headingRightSuffix ? translate("SelectedInfoPanel.COMPANY_" + headingRightSuffix) || headingRightSuffix : "";
+        const headingLeft:  string = headingSuffixLeft  ? translate("SelectedInfoPanel.COMPANY_" + headingSuffixLeft ) || headingSuffixLeft  : "";
+        const headingRight: string = headingSuffixRight ? translate("SelectedInfoPanel.COMPANY_" + headingSuffixRight) || headingSuffixRight : "";
 
         // Get the mod's translated formatted tooltip text based on property type.
-        const tooltipText: string = translate(mod.id + ".SectionTooltip" + PropertyType[props.propertyType]) || "Select a company from the dropdown.";
+        const tooltipText: string = translate(mod.id + ".SectionTooltip" + PropertyType[props.propertyType]) ||
+            "Select a company from the dropdown and click Change Now.";
         const formattedParagraphsProps: FormattedParagraphsProps = { children: tooltipText };
         const formattedTooltip: JSX.Element = ModuleResolver.instance.FormattedParagraphs(formattedParagraphsProps);
 
@@ -72,33 +73,30 @@ export const ChangeCompanyComponent = (componentList: any): any =>
             trigger(mod.id, "ChangeNowClicked");
         }
 
-        // Function to join classes.
-        function joinClasses(...classes: any) { return classes.join(" "); }
-
         // Construct the change company section.
         // Info row 1 has section heading and Change Now button.
         // Info row 2 has left and right headings.
         // Info row 3 has dropdown list of companies to choose from.
         return (
-            <ModuleResolver.instance.InfoSection tooltip={formattedTooltip} >
+            <ModuleResolver.instance.InfoSection tooltip={formattedTooltip}>
                 <ModuleResolver.instance.InfoRow
-                    className={ModuleResolver.instance.InfoRowClasses.disableFocusHighlight}
                     left={sectionHeading}
                     uppercase={true}
                     right={<button className={styles.changeNowButton} onClick={() => onChangeNowClicked()}>{changeNowLabel}</button>}
+                    disableFocus={true}
                 />
                 <ModuleResolver.instance.InfoRow
-                    className={joinClasses(ModuleResolver.instance.InfoRowClasses.disableFocusHighlight,
-                                           ModuleResolver.instance.InfoRowClasses.subRow,
-                                           styles.headingRow)}
+                    className={styles.headingRow}
                     left={headingLeft}
                     right={headingRight}
+                    disableFocus={true}
+                    subRow={true}
                 />
                 <ModuleResolver.instance.InfoRow
-                    className={joinClasses(ModuleResolver.instance.InfoRowClasses.disableFocusHighlight,
-                                           ModuleResolver.instance.InfoRowClasses.subRow,
-                                           styles.dropdownRow)}
+                    className={styles.dropdownRow}
                     left={<CompanySelector companyResourceDatas={props.companyResourceDatas} />}
+                    disableFocus={true}
+                    subRow={true}
                 />
             </ModuleResolver.instance.InfoSection>
         );

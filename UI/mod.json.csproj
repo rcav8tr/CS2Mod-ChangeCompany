@@ -18,7 +18,7 @@
     "version": "$(Version)",
     "dependencies": []
 }
-				]]>
+                ]]>
             </GeneratedText>
             <GeneratedFilePath>$(ProjectDir)UI\mod.json</GeneratedFilePath>
         </PropertyGroup>

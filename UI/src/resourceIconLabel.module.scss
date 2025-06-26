@@ -1,0 +1,10 @@
+﻿.resourceIconLabel {
+    font-size:          var(--fontSizeXS);
+    color:              var(--textColorDimmer);
+    display:            flex;
+    flex-direction:     row;
+}
+
+.resourceLabel {
+    margin-top:         calc(0rem - 16rem * (var(--fontScale) - 1));
+}

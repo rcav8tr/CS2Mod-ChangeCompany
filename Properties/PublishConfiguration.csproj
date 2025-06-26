@@ -40,7 +40,7 @@
 
 <Publish>
     <!-- Mod ID must be 0 for publishing a mod for the first time.  Mod ID must be set in order to update an existing mod. -->
-    <ModId Value="0" />
+    <ModId Value="114101" />
 
     <!-- Name of the mod to display to players.  Copied from assembly Title. -->
     <DisplayName Value="$(Title)" />
@@ -63,13 +63,13 @@ $(Screenshot00)$(Screenshot01)$(Screenshot02)$(Screenshot03)$(Screenshot04)$(Scr
     <Tag Value="Code Mod" />
 
     <!-- Link to the forum post where the mod can be discussed. -->
-    <ForumLink Value="" />
+    <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/change-company.1808488/" />
 
     <!-- Version of the mod.  Copied from assembly Version. -->
     <ModVersion Value="$(Version)" />
 
     <!-- Recommended version of the base game to use the mod. -->
-    <GameVersion Value="1.*" />
+    <GameVersion Value="1.3.*" />
 
     <!-- Dependency for the mod.  Can be set multiple times. -->
     <Dependency Id="" />

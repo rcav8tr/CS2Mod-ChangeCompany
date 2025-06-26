@@ -1,22 +1,16 @@
 ﻿.companyDropdownRow {
-    // width is calculated based on font scale determined by empirical testing.
-    width:              calc(325rem + 250rem * (var(--fontScale) - 1));
-    flex-direction:     row;
+    width:              calc(325rem + 240rem * (var(--fontScale) - 1));
+    padding-top:        calc(1rem + 10rem * (var(--fontScale) - 1));
     display:            flex;
+    flex-direction:     row;
+    flex-wrap:          wrap;
 }
 
-.companyDropdownText {
-    font-size:          var(--fontSizeXS);
-    color:              var(--textColorDimmer);
+.companyDropdownItem {
+    padding-top:        0rem;
+    padding-bottom:     0rem;
 }
 
-.companyDropdownItemNormal {
-    padding-top:        3rem;
-    padding-bottom:     3rem;
-}
-
-.companyDropdownItemSelected {
-    padding-top:        3rem;
-    padding-bottom:     3rem;
-    background-color:   rgb(0, 0, 0, 1);
+.companyDropdownItemLeft {
+    margin-right:       6rem;
 }

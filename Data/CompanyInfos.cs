@@ -19,6 +19,7 @@ namespace ChangeCompany
             Resource.Wood,
             Resource.Grain,
             Resource.Livestock,
+            Resource.Fish,
             Resource.Vegetables,
             Resource.Cotton,
             Resource.Oil,
@@ -114,11 +115,11 @@ namespace ChangeCompany
         {
             writer.PropertyName("companyResourceDatas");
             writer.ArrayBegin(this.Count);
-			foreach (CompanyInfo companyInfo in this)
-			{
-				companyInfo.Write(writer);
-			}
-			writer.ArrayEnd();
+            foreach (CompanyInfo companyInfo in this)
+            {
+                companyInfo.Write(writer);
+            }
+            writer.ArrayEnd();
         }
     }
 }

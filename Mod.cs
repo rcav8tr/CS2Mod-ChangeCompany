@@ -36,10 +36,9 @@ namespace ChangeCompany
                 // The section just needs to be created.
                 World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<ChangeCompanySection>();
 
-                // Create and activate this mod's ChangeCompanySystem which contains the logic to
-                // remove a company from a property, create a new company, and assign the new company to a property.
+                // Create and activate this mod's ChangeCompanySystem which contains the logic to change the company on a property.
                 // In the game, this logic is normally executed in the GameSimulation phase.
-                // Of cource, the GameSimulation phase runs only when the simulation is running.
+                // Of course, the GameSimulation phase runs only when the simulation is running.
                 // It is highly desired to allow the player to change companies while the game is paused.
                 // Therefore, ChangeCompanySystem updates in the PostSimulation phase, which runs even when the game is paused.
                 updateSystem.UpdateAt<ChangeCompanySystem>(SystemUpdatePhase.PostSimulation);

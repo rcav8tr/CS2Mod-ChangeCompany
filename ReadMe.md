@@ -1,5 +1,5 @@
 ﻿# Change Company
-Change the company for a commercial, industrial, and office building.
+Change the company for a commercial, industrial, or office building.
 - Commercial includes mixed residential buildings.
 - Industrial includes production and storage buildings.
 
@@ -19,18 +19,20 @@ To change the company on a building:
 - Click on the Change Now button.
   The company is changed immediately, even if the simulation is paused.
 
-After the company is changed:
+Upon changing a company:
 - All employees of any existing company are layed off.
-  The new company will hire its own employees.
+  The new company will hire its own employees, which may or may not be the same employees that were layed off.
 - If the building has no custom name, the building will be named according to the brand of the new company.
   If the building has a custom name, the custom name will be retained after the company is changed.
   To restore a building name to its default (i.e. company brand and address), change the building name to blank.
 - The new company operates the same as if the game assigned the company to the building.
-  Note that the company might still eventually move away based on the game's normal logic.
+- Changing a company does not prevent the company from moving away based on the game's normal logic.
+  The game's normal logic may move a company away because of bankruptcy or random chance.
+  The random chance of a company moving away increases with its tax rate and lack of workers.
 
 
 # Restrictions
-The mod places the following restrictions on changing a company:
+The mod has the following restrictions on changing a company:
 - The company cannot be changed on a building that is:
   service (has no company), signature, extractor, under construction, abandoned, condemned, deleted, destroyed, or outside connection.
 - The company cannot be changed on a building that allows only one resource to be sold, produced, or stored.
@@ -59,8 +61,7 @@ Disabling or unsubscribing this mod does not affect companies that were changed 
 # Possible Future Enhancements
 Here are some possible future enhancements that were thought about during development but not included initially:
 - Allow a company to be "locked" on its building to prevent the company from moving away based on the game's normal logic.
-  The game's normal logic may move a company away because of bankruptcy or random chance.
-  The random chance of a company moving away increases with its tax rate and lack of workers.
+  Possibly do this as a separate mod.
 
 # Acknowledgements
 The following mods were used in the development of this mod:

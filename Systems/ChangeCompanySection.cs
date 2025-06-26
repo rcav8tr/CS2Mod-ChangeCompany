@@ -1,5 +1,7 @@
 ﻿using Colossal.Entities;
+using Colossal.Serialization.Entities;
 using Colossal.UI.Binding;
+using Game;
 using Game.Buildings;
 using Game.Common;
 using Game.Economy;
@@ -26,7 +28,7 @@ namespace ChangeCompany
 
         // For each property prefab, maintain its corresponding CompanyInfos.
         // Because the company infos for a property prefab should not change during the game,
-        // the company infos are obtained once when this system is created.
+        // the company infos are obtained every time a game is about to be loaded.
         // This makes obtaining the company infos for a property prefab very fast during the game (simple lookup)
         // compared to computing the company infos when they are needed.
         // This extra speed comes at the expense of more memory used to store the data.
@@ -34,7 +36,7 @@ namespace ChangeCompany
         private Dictionary<Entity, CompanyInfos> _propertyCompanyInfos;
 
         // Define resources manufactured by office.
-        private const Resource ResourcesOffice = Resource.Software | Resource.Telecom | Resource.Financial | Resource.Media;
+        private const Resource ResourcesManufacturedByOffice = Resource.Software | Resource.Telecom | Resource.Financial | Resource.Media;
 
         // C# to UI bindings.
         private ValueBinding<int> _bindingSelectedCompanyIndex;
@@ -64,9 +66,6 @@ namespace ChangeCompany
                 // Other systems.
                 _changeCompanySystem = World.GetOrCreateSystemManaged<ChangeCompanySystem>();
 
-                // Initialize property company infos.
-                InitializePropertyCompanyInfos();
-
                 // Add bindings for C# to UI.
                 AddBinding(_bindingSelectedCompanyIndex = new ValueBinding<int>(ModAssemblyInfo.Name, "SelectedCompanyIndex", 0));
 
@@ -88,7 +87,7 @@ namespace ChangeCompany
                 bool found = false;
                 for (int i = 0; i < middleSections.Count; i++)
                 {
-                    if (middleSections[i].GetType() == typeof(CompanySection))
+                    if (middleSections[i] is CompanySection)
                     {
                         middleSections.Insert(i + 1, this);
                         found = true;
@@ -102,20 +101,6 @@ namespace ChangeCompany
 
                 // Initialize section properties.
                 Reset();
-
-#if DEBUG
-                // Dump resource data to log file for analysis of resource prefab properties.
-                //ComponentLookup<ResourceData> componentLookupResourceData = CheckedStateRef.GetComponentLookup<ResourceData>(true);
-                //componentLookupResourceData.Update(ref CheckedStateRef);
-                //ResourceSystem resourceSystem = base.World.GetOrCreateSystemManaged<ResourceSystem>();
-                //ResourcePrefabs resourcePrefabs = resourceSystem.GetPrefabs();
-                //ResourceIterator iterator = ResourceIterator.GetIterator();
-                //while (iterator.Next())
-                //{
-                //    ResourceData resourceData = componentLookupResourceData[resourcePrefabs[iterator.resource]];
-                //    Mod.log.Info($"{iterator.resource,15}\t{resourceData.m_IsProduceable}\t{resourceData.m_IsTradable}\t{resourceData.m_IsMaterial}\t{resourceData.m_IsLeisure}\t{resourceData.m_Price.x}\t{resourceData.m_Price.y}");
-                //}
-#endif
             }
             catch (Exception ex)
             {
@@ -124,13 +109,25 @@ namespace ChangeCompany
         }
 
         /// <summary>
-        /// Initialize property company infos.
+        /// Called when a game, main menu, editor, etc. is about to be loaded.
         /// </summary>
-        private void InitializePropertyCompanyInfos()
+        protected override void OnGamePreload(Purpose purpose, GameMode mode)
         {
+            base.OnGamePreload(purpose, mode);
+
+            // Must be a game about to be loaded.
+            if (mode != GameMode.Game)
+            {
+                return;
+            }
+
+            // At the time OnCreate is called, the IndustrialProcessData and BuildingPropetyData are not yet initialized.
+            // IndustrialProcessData defines the resource output by a company.
+            // BuildingPropetyData defines the resources allowed by a property.
+            // So these initializations must be performed after OnCreate.
             try
             {
-                Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(InitializePropertyCompanyInfos)}");
+                Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(OnGamePreload)}");
 
                 // Get possible company infos for commercial, industrial, office, and storage company prefabs.
                 GetCompanyInfos(
@@ -142,7 +139,7 @@ namespace ChangeCompany
                 // Get all property prefabs, identified by having BuildingPropertyData.
                 EntityQuery propertyPrefabsQuery = GetEntityQuery(ComponentType.ReadOnly<BuildingPropertyData>());
                 List<Entity> propertyPrefabs = propertyPrefabsQuery.ToEntityArray(Allocator.Temp).ToList();
-                Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(InitializePropertyCompanyInfos)} property prefabs total = {propertyPrefabs.Count,4}");
+                Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(OnGamePreload)} property prefabs total = {propertyPrefabs.Count,4}");
 
                 // Do each property prefab.
                 _propertyCompanyInfos = new();
@@ -156,14 +153,14 @@ namespace ChangeCompany
                     BuildingPropertyData buildingPropertyData = EntityManager.GetComponentData<BuildingPropertyData>(propertyPrefab);
                     if (buildingPropertyData.m_AllowedSold != Resource.NoResource)
                     {
-                        // A property prefab that allows sold resources means it is commercial.
+                        // A property prefab that allows sold resources is commercial.
                         PopulatePropertyCompanyInfos(propertyPrefab, buildingPropertyData.m_AllowedSold, companyInfosCommercial);
                     }
                     else if (buildingPropertyData.m_AllowedManufactured != Resource.NoResource)
                     {
-                        // A property prefab that allows manufactured resources means it is industrial or office.
+                        // A property prefab that allows manufactured resources is industrial or office.
                         // Identify industrial vs office property prefabs by the resource.
-                        if ((buildingPropertyData.m_AllowedManufactured & ResourcesOffice) == Resource.NoResource)
+                        if ((buildingPropertyData.m_AllowedManufactured & ResourcesManufacturedByOffice) == Resource.NoResource)
                         {
                             PopulatePropertyCompanyInfos(propertyPrefab, buildingPropertyData.m_AllowedManufactured, companyInfosIndustrial);
                         }
@@ -174,7 +171,7 @@ namespace ChangeCompany
                     }
                     else if (buildingPropertyData.m_AllowedStored != Resource.NoResource)
                     {
-                        // A property prefab that allows stored resources means it is storage.
+                        // A property prefab that allows stored resources is storage.
                         PopulatePropertyCompanyInfos(propertyPrefab, buildingPropertyData.m_AllowedStored, companyInfosStorage);
                     }
                     else
@@ -186,11 +183,23 @@ namespace ChangeCompany
                 }
 
                 // Info logging.
-                Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(InitializePropertyCompanyInfos)} property prefabs found = {_propertyCompanyInfos.Count,4}");
+                Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(OnGamePreload)} property prefabs found = {_propertyCompanyInfos.Count,4}");
 
 #if DEBUG
                 // Dump property prefabs.
                 //DumpPropertyPrefabs();
+
+                // Dump resource data to log file for analysis of resource prefab properties.
+                //ComponentLookup<ResourceData> componentLookupResourceData = CheckedStateRef.GetComponentLookup<ResourceData>(true);
+                //componentLookupResourceData.Update(ref CheckedStateRef);
+                //ResourceSystem resourceSystem = base.World.GetOrCreateSystemManaged<ResourceSystem>();
+                //ResourcePrefabs resourcePrefabs = resourceSystem.GetPrefabs();
+                //ResourceIterator iterator = ResourceIterator.GetIterator();
+                //while (iterator.Next())
+                //{
+                //    ResourceData resourceData = componentLookupResourceData[resourcePrefabs[iterator.resource]];
+                //    Mod.log.Info($"{iterator.resource,15}\t{resourceData.m_IsProduceable}\t{resourceData.m_IsTradable}\t{resourceData.m_IsMaterial}\t{resourceData.m_IsLeisure}\t{resourceData.m_Price.x}\t{resourceData.m_Price.y}");
+                //}
 #endif
             }
             catch (Exception ex)
@@ -246,7 +255,7 @@ namespace ChangeCompany
                     // Identify industrial vs office company prefabs by the output resource.
                     // The only other way that was found to identify office is by the company prefab name starting with "Office".
                     Resource outputResource = componentLookupIndustrialProcessData[companyPrefabIndustrialOffice].m_Output.m_Resource;
-                    if ((outputResource & ResourcesOffice) == Resource.NoResource)
+                    if ((outputResource & ResourcesManufacturedByOffice) == Resource.NoResource)
                     {
                         companyPrefabsIndustrial.Add(companyPrefabIndustrialOffice);
                     }
@@ -358,7 +367,7 @@ namespace ChangeCompany
             // use only the company infos where the output resource is one of the resources allowed by the property prefab.
             // Note that there are companies that produce Petrochemicals, Beverages, ConvenienceFood, and Textiles resources
             // from different input resources (e.g. Beverages can be produced from Grain and from Vegetables).
-            // These are included separately in the company infos so the user can change between them.
+            // These are included separately in the possible company infos so the user can change between them.
             CompanyInfos companyInfosForPropertyPrefab = new();
             foreach (CompanyInfo possibleCompanyInfo in possibleCompanyInfos)
             {
@@ -368,7 +377,7 @@ namespace ChangeCompany
                 }
             }
 
-            // There must be at least 2 company infos to save the property prefab with it company infos.
+            // There must be at least 2 company infos to save the property prefab with its company infos.
             // If there is only one company info for the property prefab, then
             // there is no reason to display the Change Company section because changing the company
             // will not result in any change in the resource sold, manufactured, or stored.
@@ -484,30 +493,29 @@ namespace ChangeCompany
 #endif
 
         /// <summary>
-        /// Called when the game wants to reset section properties.
+        /// Called by the game when the game wants to reset section properties.
         /// </summary>
         [Preserve]
         protected override void Reset()
         {
             _sectionPropertyPropertyType = PropertyType.None;
-            _sectionPropertyCompanyInfos = null;    // Do not Clear because that will clear the company infos saved for the property prefab.
+            _sectionPropertyCompanyInfos = null;    // Do not Clear because that will clear the possible company infos saved for the property prefab.
         }
 
         /// <summary>
-        /// Called when the game wants to know if the section should be visible.
+        /// Called by the game when the game wants to know if the section should be visible.
         /// </summary>
         [Preserve]
         protected override void OnUpdate()
         {
             // If property type is invalid, then section is not visible.
-            PropertyType propertyType = GetPropertyType();
-            if (propertyType == PropertyType.None)
+            if (GetPropertyType() == PropertyType.None)
             {
                 visible = false;
                 return;
             }
 
-            // If property prefab was not saved with company infos, then section is not visible.
+            // If property prefab was not saved with its company infos, then section is not visible.
             if (!_propertyCompanyInfos.ContainsKey(selectedPrefab))
             {
                 visible = false;
@@ -532,7 +540,7 @@ namespace ChangeCompany
         }
 
         /// <summary>
-        /// Called for a visible section when the game wants to process the section properties that will be sent to the UI.
+        /// Called by the game for a visible section when the game wants to process the section properties that will be sent to the UI.
         /// </summary>
         [Preserve]
         protected override void OnProcess()
@@ -545,7 +553,7 @@ namespace ChangeCompany
         }
 
         /// <summary>
-        /// Called for a visible section when the game wants to write the previously processed section properties to the UI.
+        /// Called by the game for a visible section when the game wants to write the previously processed section properties to the UI.
         /// </summary>
         [Preserve]
         public override void OnWriteProperties(IJsonWriter writer)
@@ -596,15 +604,14 @@ namespace ChangeCompany
         /// </summary>
         private PropertyType GetPropertyType()
         {
-            // Residential must be mixed to have commercial.
+            // Check for residential.
             if (EntityManager.HasComponent<ResidentialProperty>(selectedEntity))
             {
-                if (EntityManager.TryGetComponent(selectedPrefab, out BuildingPropertyData buildingPropertyData))
+                // If residential allows sold resources (i.e. mixed residential), then the property is commercial.
+                if (EntityManager.TryGetComponent(selectedPrefab, out BuildingPropertyData buildingPropertyData) &&
+                    buildingPropertyData.m_AllowedSold != Resource.NoResource)
                 {
-                    if (PropertyUtils.IsMixedBuilding(buildingPropertyData))
-                    {
-                        return PropertyType.Commercial;
-                    }
+                    return PropertyType.Commercial;
                 }
 
                 // Residential that is not mixed is never any other property type.

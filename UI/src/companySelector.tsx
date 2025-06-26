@@ -1,11 +1,11 @@
 ﻿import { bindValue, useValue, trigger           } from "cs2/api";
-import { useLocalization                        } from "cs2/l10n";
 import { Dropdown, DropdownItem, DropdownToggle } from "cs2/ui";
 
 import { CompanyResourceData                    } from "changeCompanyComponent";
 import   styles                                   from "companySelector.module.scss";
 import   mod                                      from "../mod.json";
 import { ModuleResolver                         } from "moduleResolver";
+import { ResourceIconLabel                      } from "resourceIconLabel";
 
 // Define binding.
 const bindingSelectedCompanyIndex = bindValue<number>(mod.id, "SelectedCompanyIndex", 0);
@@ -19,9 +19,6 @@ type CompanySelectorProps =
 // Custom dropdown for selecting a company.
 export const CompanySelector = (props: CompanySelectorProps) =>
 {
-    // Translations.
-    const { translate } = useLocalization();
-
     // Get the value from binding.
     const selectedCompanyIndex: number = useValue(bindingSelectedCompanyIndex);
 
@@ -46,16 +43,6 @@ export const CompanySelector = (props: CompanySelectorProps) =>
                 const hasInput1: boolean = resourceInput1 != noResource;
                 const hasInput2: boolean = resourceInput2 != noResource;
 
-                // Get the game's translated text for each resource.
-                const textOutput: string =             translate("Resources.TITLE[" + resourceOutput + "]") || resourceOutput;
-                const textInput1: string = hasInput1 ? translate("Resources.TITLE[" + resourceInput1 + "]") || resourceInput1 : "";
-                const textInput2: string = hasInput2 ? translate("Resources.TITLE[" + resourceInput2 + "]") || resourceInput2 : "";
-
-                // Get game's icon for each resource.
-                const iconOutput: string =             "Media/Game/Resources/" + resourceOutput + ".svg";
-                const iconInput1: string = hasInput1 ? "Media/Game/Resources/" + resourceInput1 + ".svg" : "";
-                const iconInput2: string = hasInput2 ? "Media/Game/Resources/" + resourceInput2 + ".svg" : "";
-
                 // Check if this company info is for the selected company.
                 const selected: boolean = (companyInfoCounter == selectedCompanyIndex);
 
@@ -67,23 +54,16 @@ export const CompanySelector = (props: CompanySelectorProps) =>
                 // Construct dropdown item content.
                 // Left always has the output resource.
                 // Right has nothing, input1, or input1+input2 resources.
-                // Game uses "+" for concatenator character for all languages.
                 const dropdownItemContent: JSX.Element =
                     <div className={styles.companyDropdownRow}>
-                        <div className={joinClasses(ModuleResolver.instance.InfoRowClasses.left, styles.companyDropdownText)}>
-                            <img className={ModuleResolver.instance.CompanySectionClasses.icon} src={iconOutput} />
-                            {textOutput}
+                        <div className={joinClasses(ModuleResolver.instance.InfoRowClasses.left, styles.companyDropdownItemLeft)}>
+                            <ResourceIconLabel resource={resourceOutput} trailingConcatenator={false} />
                         </div>
                         {hasInput1 &&
-                            <div className={joinClasses(ModuleResolver.instance.InfoRowClasses.right, styles.companyDropdownText)}>
-                                <img className={ModuleResolver.instance.CompanySectionClasses.icon} src={iconInput1} />
-                                {textInput1}
+                            <div className={ModuleResolver.instance.InfoRowClasses.right}>
+                                <ResourceIconLabel resource={resourceInput1} trailingConcatenator={hasInput2} />
                                 {hasInput2 &&
-                                    <>
-                                        <div className={ModuleResolver.instance.CompanySectionClasses.concatenator}>+</div>
-                                        <img className={ModuleResolver.instance.CompanySectionClasses.icon} src={iconInput2} />
-                                        {textInput2}
-                                    </>
+                                    <ResourceIconLabel resource={resourceInput2} trailingConcatenator={false} />
                                 }
                             </div>
                         }
@@ -103,14 +83,14 @@ export const CompanySelector = (props: CompanySelectorProps) =>
                         value=""
                         closeOnSelect={true}
                         selected={selected}
-                        className={selected ? styles.companyDropdownItemSelected : styles.companyDropdownItemNormal}
+                        className={styles.companyDropdownItem}
                         onChange={() => trigger(mod.id, "SelectedCompanyChanged", companyInfoIndex)}
                         focusKey={ModuleResolver.instance.FOCUS_DISABLED}
                     >
                         {dropdownItemContent}
                     </DropdownItem>
 
-                // Increment company info counter.
+                // Increment company info counter for next one.
                 companyInfoCounter++;
 
                 // Return the dropdown item.
