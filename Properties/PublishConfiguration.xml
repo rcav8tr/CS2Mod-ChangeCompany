@@ -32,6 +32,7 @@ To change the company on a building:
 - Select a building to display its information.
 - If the company can be changed (see Restrictions below), the Change Company section will be displayed.
 - Choose the new company in the dropdown based on the resource you want the new company to sell, produce, or store.
+  The company dropdown defaults to the current company, if any.
 - Click on the Change Now button.
   The company is changed immediately, even if the simulation is paused.
 
@@ -50,7 +51,7 @@ Upon changing a company:
 # Restrictions
 The mod has the following restrictions on changing a company:
 - The company cannot be changed on a building that is:
-  service (has no company), signature, extractor, under construction, abandoned, condemned, deleted, destroyed, or outside connection.
+  service (has no company), extractor, under construction, abandoned, condemned, deleted, destroyed, or outside connection.
 - The company cannot be changed on a building that allows only one resource to be sold, produced, or stored.
   For example, a gas station can sell only Petrochemicals.
   The company on a gas station cannot be changed to sell any resource other than Petrochemicals.
@@ -101,7 +102,7 @@ The following mods were used in the development of this mod:
     <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/change-company.1808488/" />
 
     <!-- Version of the mod.  Copied from assembly Version. -->
-    <ModVersion Value="1.0.0" />
+    <ModVersion Value="1.1.0" />
 
     <!-- Recommended version of the base game to use the mod. -->
     <GameVersion Value="1.3.*" />
@@ -115,7 +116,9 @@ The following mods were used in the development of this mod:
 
     <!-- Change log.  Copied from ChangeLog.md file.  Supports minimal markdown subset. -->
     <ChangeLog>
-- Initial release.
+- Allow change company on signature buildings, still subject to other restrictions.
+- Allow for mixed residential other than commercial, available only thru mods.
+- The company dropdown defaults to the current company, if any.
 </ChangeLog>
 
     <!-- External links.  Can be set multiple times. -->

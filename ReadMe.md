@@ -16,6 +16,7 @@ To change the company on a building:
 - Select a building to display its information.
 - If the company can be changed (see Restrictions below), the Change Company section will be displayed.
 - Choose the new company in the dropdown based on the resource you want the new company to sell, produce, or store.
+  The company dropdown defaults to the current company, if any.
 - Click on the Change Now button.
   The company is changed immediately, even if the simulation is paused.
 
@@ -34,7 +35,7 @@ Upon changing a company:
 # Restrictions
 The mod has the following restrictions on changing a company:
 - The company cannot be changed on a building that is:
-  service (has no company), signature, extractor, under construction, abandoned, condemned, deleted, destroyed, or outside connection.
+  service (has no company), extractor, under construction, abandoned, condemned, deleted, destroyed, or outside connection.
 - The company cannot be changed on a building that allows only one resource to be sold, produced, or stored.
   For example, a gas station can sell only Petrochemicals.
   The company on a gas station cannot be changed to sell any resource other than Petrochemicals.

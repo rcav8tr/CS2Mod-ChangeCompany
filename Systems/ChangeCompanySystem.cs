@@ -62,7 +62,7 @@ namespace ChangeCompany
             Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(OnCreate)}");
 
             base.OnCreate();
-
+            
             try
             {
                 // Get other systems.
@@ -588,7 +588,7 @@ namespace ChangeCompany
         /// <summary>
         /// Get the company, if any, at a property.
         /// </summary>
-        private bool TryGetCompanyAtProperty(Entity propertyEntity, out Entity company)
+        public bool TryGetCompanyAtProperty(Entity propertyEntity, out Entity company)
         {
             // Property must have a Renter buffer.
             if (EntityManager.TryGetBuffer(propertyEntity, true, out DynamicBuffer<Renter> renters))

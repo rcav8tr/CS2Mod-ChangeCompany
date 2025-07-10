@@ -137,6 +137,7 @@ namespace ChangeCompany
                     out CompanyInfos companyInfosStorage);
 
                 // Get all property prefabs, identified by having BuildingPropertyData.
+                // All the properties this mod cares about have BuildingPropertyData even though DumpPropertyPrefabs uses BuildingData.
                 EntityQuery propertyPrefabsQuery = GetEntityQuery(ComponentType.ReadOnly<BuildingPropertyData>());
                 List<Entity> propertyPrefabs = propertyPrefabsQuery.ToEntityArray(Allocator.Temp).ToList();
                 Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(OnGamePreload)} property prefabs total = {propertyPrefabs.Count,4}");
@@ -198,7 +199,7 @@ namespace ChangeCompany
                 //while (iterator.Next())
                 //{
                 //    ResourceData resourceData = componentLookupResourceData[resourcePrefabs[iterator.resource]];
-                //    Mod.log.Info($"{iterator.resource,15}\t{resourceData.m_IsProduceable}\t{resourceData.m_IsTradable}\t{resourceData.m_IsMaterial}\t{resourceData.m_IsLeisure}\t{resourceData.m_Price.x}\t{resourceData.m_Price.y}");
+                //    Mod.log.Info($"{iterator.resource}\t{resourceData.m_IsProduceable}\t{resourceData.m_IsTradable}\t{resourceData.m_IsMaterial}\t{resourceData.m_IsLeisure}\t{resourceData.m_Price.x}\t{resourceData.m_Price.y}");
                 //}
 #endif
             }
@@ -241,15 +242,17 @@ namespace ChangeCompany
 
                 // Get company prefabs for industrial, which includes office.
                 // Query copied from IndustrialSpawnSystem except exclude extractors.
-                List<Entity> companyPrefabsIndustrial = new List<Entity>();
-                List<Entity> companyPrefabsOffice     = new List<Entity>();
-                EntityQuery companyPrefabQueryIndustrial = GetEntityQuery(
+                EntityQuery companyPrefabQueryIndustrialOffice = GetEntityQuery(
                     ComponentType.ReadOnly<ArchetypeData>(),
                     ComponentType.ReadOnly<IndustrialCompanyData>(),
                     ComponentType.ReadOnly<IndustrialProcessData>(),
                     ComponentType.Exclude<StorageCompanyData>(),
                     ComponentType.Exclude<ExtractorCompanyData>());
-                List<Entity> companyPrefabsIndustrialOffice = companyPrefabQueryIndustrial.ToEntityArray(Allocator.Temp).ToList();
+                List<Entity> companyPrefabsIndustrialOffice = companyPrefabQueryIndustrialOffice.ToEntityArray(Allocator.Temp).ToList();
+
+                // Determine which company prefabs are industrial vs office.
+                List<Entity> companyPrefabsIndustrial = new List<Entity>();
+                List<Entity> companyPrefabsOffice     = new List<Entity>();
                 foreach (Entity companyPrefabIndustrialOffice in companyPrefabsIndustrialOffice)
                 {
                     // Identify industrial vs office company prefabs by the output resource.
@@ -376,117 +379,247 @@ namespace ChangeCompany
                     companyInfosForPropertyPrefab.Add(possibleCompanyInfo);
                 }
             }
-
+            
             // There must be at least 2 company infos to save the property prefab with its company infos.
             // If there is only one company info for the property prefab, then
             // there is no reason to display the Change Company section because changing the company
             // will not result in any change in the resource sold, manufactured, or stored.
-            if (resourcesAllowedByPropertyPrefab.Count >= 2)
+            if (companyInfosForPropertyPrefab.Count >= 2)
             {
                 _propertyCompanyInfos.Add(propertyPrefab, companyInfosForPropertyPrefab);
             }
         }
 
 #if DEBUG
+        // Property category for prefab dump.
+        private enum PropertyCategory
+        {
+            Res,
+            ResMix,
+            Comm,
+            Ind,
+            Off,
+            Stor,
+            Other,
+        }
+
+        // Property data for prefab dump.
+        private class PropertyData
+        {
+            public Entity PropertyPrefab { get; set; }
+            public PropertyCategory Category { get; set; }
+            public string Zone { get; set; }
+            public bool Signature { get; set; }
+            public string Name { get; set; }
+            public List<Resource> Resources { get; set; }
+
+            public PropertyData(EntityManager entityManager, Entity propertyPrefab)
+            {
+                PropertyPrefab = propertyPrefab;
+
+                // Get category and resources based on BuildingPropertyData.
+                PrefabSystem prefabSystem = World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<PrefabSystem>();
+                if (entityManager.TryGetComponent(propertyPrefab, out BuildingPropertyData buildingPropertyData))
+                {
+                    // Check if prefab has more than one of Sold, Manufactured, and Stored.
+                    int count = 0;
+                    if (buildingPropertyData.m_AllowedSold         != Resource.NoResource) { count++; }
+                    if (buildingPropertyData.m_AllowedManufactured != Resource.NoResource) { count++; }
+                    if (buildingPropertyData.m_AllowedStored       != Resource.NoResource) { count++; }
+                    if (count > 1)
+                    {
+                        // This should never happen.
+                        Mod.log.Warn($"Prefab [{prefabSystem.GetPrefabName(propertyPrefab)}] has more than one of Sold, Manufactured, Stored.");
+                    }
+
+                    // Check for residential mixed and commercial.
+                    if (buildingPropertyData.m_AllowedSold != Resource.NoResource)
+                    {
+                        if (HasResidential(entityManager, propertyPrefab))
+                        {
+                            Category = PropertyCategory.ResMix;
+                        }
+                        else
+                        {
+                            Category = PropertyCategory.Comm;
+                        }
+                        Resources = GetResourcesAllowed(buildingPropertyData.m_AllowedSold);
+                    }
+                    // Check for industrial and office.
+                    else if (buildingPropertyData.m_AllowedManufactured != Resource.NoResource)
+                    {
+                        if ((buildingPropertyData.m_AllowedManufactured & ResourcesManufacturedByOffice) == Resource.NoResource)
+                        {
+                            Category = PropertyCategory.Ind;
+                        }
+                        else
+                        {
+                            Category = PropertyCategory.Off;
+                        }
+                        Resources = GetResourcesAllowed(buildingPropertyData.m_AllowedManufactured);
+                    }
+                    // Check for storage.
+                    else if (buildingPropertyData.m_AllowedStored != Resource.NoResource)
+                    {
+                        Category = PropertyCategory.Stor;
+                        Resources = GetResourcesAllowed(buildingPropertyData.m_AllowedStored);
+                    }
+                    else
+                    {
+                        // Property prefab has no allowed resources for sold, manufactured, or stored.
+                        // Check for residential vs other.
+                        if (HasResidential(entityManager, propertyPrefab))
+                        {
+                            Category = PropertyCategory.Res;
+                        }
+                        else
+                        {
+                            Category = PropertyCategory.Other;
+                        }
+                        Resources = new List<Resource>();
+                    }
+                }
+                else
+                {
+                    // Property prefab has no BuildingPropertyData.
+                    // Check for residential vs other.
+                    if (HasResidential(entityManager, propertyPrefab))
+                    {
+                        Category = PropertyCategory.Res;
+                    }
+                    else
+                    {
+                        Category = PropertyCategory.Other;
+                    }
+                    Resources = new List<Resource>();
+                }
+
+                // Get signature status.
+                Signature = entityManager.HasComponent<SignatureBuildingData>(propertyPrefab);
+
+                // Get zone as string.
+                Zone = "";
+                if (entityManager.TryGetComponent(propertyPrefab, out SpawnableBuildingData spawnableBuildingData))
+                {
+                    Zone = prefabSystem.GetPrefabName(spawnableBuildingData.m_ZonePrefab);
+                }
+
+                // Get prefab name.
+                Name = prefabSystem.GetPrefabName(propertyPrefab);
+            }
+
+            /// <summary>
+            /// Get whether or not the property prefab has residential.
+            /// </summary>
+            private bool HasResidential(EntityManager entityManager, Entity propertyPrefab)
+            {
+                if (entityManager.TryGetComponent(propertyPrefab, out ObjectData objectData))
+                {
+                    NativeArray<ComponentType> componentTypes = objectData.m_Archetype.GetComponentTypes();
+                    foreach (ComponentType componentType in componentTypes)
+                    {
+                        if (componentType.GetManagedType() == typeof(ResidentialProperty))
+                        {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            /// <summary>
+            /// Convert resources allowed flags to a list of resources.
+            /// </summary>
+            private List<Resource> GetResourcesAllowed(Resource allowedResourcesFlags)
+            {
+                List<Resource> resourcesAllowed = new List<Resource>();
+                foreach (Resource resourceToCheck in CompanyInfos.ResourceOrder)
+                {
+                    if ((allowedResourcesFlags & resourceToCheck) != 0)
+                    {
+                        resourcesAllowed.Add(resourceToCheck);
+                    }
+                }
+                return resourcesAllowed;
+            }
+        }
+
         /// <summary>
-        /// Dump property prefabs and resources allowed by each.
+        /// Dump property prefabs.
         /// </summary>
         private void DumpPropertyPrefabs()
         {
-            // Get all property prefabs, identified by having BuildingPropertyData.
-            EntityQuery propertyPrefabsQuery = GetEntityQuery(ComponentType.ReadOnly<BuildingPropertyData>());
+            // Get all property prefabs, identified by having BuildingData.
+            EntityQuery propertyPrefabsQuery = GetEntityQuery(ComponentType.ReadOnly<BuildingData>());
             List<Entity> propertyPrefabs = propertyPrefabsQuery.ToEntityArray(Allocator.Temp).ToList();
 
-            // Use nested loops to sort property prefabs by name.
-            PrefabSystem prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
-            for (int i = 0; i < propertyPrefabs.Count - 1; i++)
+            // Do each property prefab.
+            List<PropertyData> propertyDatas = new();
+            foreach (Entity propertyPrefab in propertyPrefabs)
             {
-                string prefabName1 = prefabSystem.GetPrefabName(propertyPrefabs[i]);
-                for (int j = i + 1; j < propertyPrefabs.Count; j++)
+                propertyDatas.Add(new PropertyData(EntityManager, propertyPrefab));
+            }
+
+            // Use nested loops to sort property datas by category and then by zone and then by signature and then by prefab name.
+            for (int i = 0; i < propertyDatas.Count - 1; i++)
+            {
+                PropertyCategory category1 = propertyDatas[i].Category;
+                string zone1 = propertyDatas[i].Zone;
+                bool signature1 = propertyDatas[i].Signature;
+                string name1 = propertyDatas[i].Name;
+                for (int j = i + 1; j < propertyDatas.Count; j++)
                 {
-                    string prefabName2 = prefabSystem.GetPrefabName(propertyPrefabs[j]);
-                    if (prefabName1.CompareTo(prefabName2) > 0)
+                    PropertyCategory category2 = propertyDatas[j].Category;
+                    string zone2 = propertyDatas[j].Zone;
+                    bool signature2 = propertyDatas[j].Signature;
+                    string name2 = propertyDatas[j].Name;
+                    if (
+                        (category1 >  category2) ||
+                        (category1 == category2 && zone1.CompareTo(zone2) >  0) ||
+                        (category1 == category2 && zone1.CompareTo(zone2) == 0 && signature1 && !signature2) ||
+                        (category1 == category2 && zone1.CompareTo(zone2) == 0 && signature1 ==  signature2 && name1.CompareTo(name2) > 0)
+                       )
                     {
-                        (propertyPrefabs[i], propertyPrefabs[j]) = (propertyPrefabs[j], propertyPrefabs[i]);
-                        prefabName1 = prefabName2;
+                        (propertyDatas[i], propertyDatas[j]) = (propertyDatas[j], propertyDatas[i]);
+                        category1  = category2;
+                        zone1      = zone2;
+                        signature1 = signature2;
+                        name1      = name2;
                     }
                 }
             }
 
-            // Create dictionaries of property prefabs and for each property prefab store a list of the resources allowed.
-            Dictionary<Entity, List<Resource>> propertyPrefabsSold         = new();
-            Dictionary<Entity, List<Resource>> propertyPrefabsManufactured = new();
-            Dictionary<Entity, List<Resource>> propertyPrefabsStored       = new();
-
-            // Do each property prefab.
-            foreach (Entity propertyPrefab in propertyPrefabs)
-            {
-                BuildingPropertyData buildingPropertyData = EntityManager.GetComponentData<BuildingPropertyData>(propertyPrefab);
-                if (buildingPropertyData.m_AllowedSold != Resource.NoResource)
-                {
-                    propertyPrefabsSold.Add(propertyPrefab, GetResourcesAllowed(buildingPropertyData.m_AllowedSold));
-                }
-                else if (buildingPropertyData.m_AllowedManufactured != Resource.NoResource)
-                {
-                    propertyPrefabsManufactured.Add(propertyPrefab, GetResourcesAllowed(buildingPropertyData.m_AllowedManufactured));
-                }
-                else if (buildingPropertyData.m_AllowedStored != Resource.NoResource)
-                {
-                    propertyPrefabsStored.Add(propertyPrefab, GetResourcesAllowed(buildingPropertyData.m_AllowedStored));
-                }
-                else
-                {
-                    // Property prefab has no allowed resources for sold, manufactured, or stored.
-                    // Skip this property prefab.
-                }
-            }
-
-            // Dump property prefabs.
-            Mod.log.Info("Property prefabs for Sold:");
-            DumpPropertyPrefabs(propertyPrefabsSold);
-            Mod.log.Info("Property prefabs for Manufactured:");
-            DumpPropertyPrefabs(propertyPrefabsManufactured);
-            Mod.log.Info("Property prefabs for Stored:");
-            DumpPropertyPrefabs(propertyPrefabsStored);
-        }
-
-        /// <summary>
-        /// Convert resources allowed flags to a list of resources.
-        /// </summary>
-        private List<Resource> GetResourcesAllowed(Resource allowedResourcesFlags)
-        {
-            List<Resource> resourcesAllowed = new List<Resource>();
-            foreach (Resource resourceToCheck in CompanyInfos.ResourceOrder)
-            {
-                if ((allowedResourcesFlags & resourceToCheck) != 0)
-                {
-                    resourcesAllowed.Add(resourceToCheck);
-                }
-            }
-            return resourcesAllowed;
-        }
-
-        /// <summary>
-        /// Dump property prefabs and resources allowed for each.
-        /// </summary>
-        private void DumpPropertyPrefabs(Dictionary<Entity, List<Resource>> resourcesAllowed)
-        {
-            // Dump the resources allowed with a heading.
-            PrefabSystem prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
-            string line = "Prefab Name\tCount";
+            // Log headings.
+            Mod.log.Info("Property prefabs:");
+            string line = "Category\tZone\tSignature\tPrefab Name\tCount";
             foreach (Resource resource in CompanyInfos.ResourceOrder)
             {
                 line += "\t" + resource.ToString();
             }
             Mod.log.Info(line);
-            foreach (Entity entity in resourcesAllowed.Keys)
+
+            // Do each property data.
+            foreach (PropertyData propertyData in propertyDatas)
             {
-                List<Resource> resources = resourcesAllowed[entity];
-                line = $"{prefabSystem.GetPrefabName(entity)}\t{resources.Count}";
-                foreach (Resource resource in CompanyInfos.ResourceOrder)
+                // Include data.
+                line =
+                    propertyData.Category.ToString() +
+                    "\t" + propertyData.Zone +
+                    "\t" + (propertyData.Signature ? "X" : "") +
+                    "\t" + propertyData.Name;
+
+                // Include resources, if any.
+                List<Resource> resources = propertyData.Resources;
+                if (resources.Count > 0)
                 {
-                    line += "\t" + (resources.Contains(resource) ? "X" : "");
+                    line += $"\t{resources.Count}";
+                    foreach (Resource resource in CompanyInfos.ResourceOrder)
+                    {
+                        line += (resources.Contains(resource) ? "\tX" : "\t");
+                    }
                 }
+
+                // Log the property data.
                 Mod.log.Info(line);
             }
         }
@@ -525,11 +658,10 @@ namespace ChangeCompany
             // If property has any of these components, then section is not visible.
             // InfoSectionBase by default is not visible for Destroyed, OutsideConnection, UnderConstruction, and Upgrades.
             // So no need to explicitly check for those here.
-            if (EntityManager.HasComponent<Signature           >(selectedEntity) ||
-                EntityManager.HasComponent<ExtractorProperty   >(selectedEntity) ||
-                EntityManager.HasComponent<Abandoned           >(selectedEntity) ||
-                EntityManager.HasComponent<Condemned           >(selectedEntity) ||
-                EntityManager.HasComponent<Deleted             >(selectedEntity))
+            if (EntityManager.HasComponent<ExtractorProperty>(selectedEntity) ||
+                EntityManager.HasComponent<Abandoned        >(selectedEntity) ||
+                EntityManager.HasComponent<Condemned        >(selectedEntity) ||
+                EntityManager.HasComponent<Deleted          >(selectedEntity))
             {
                 visible = false;
                 return;
@@ -572,8 +704,30 @@ namespace ChangeCompany
             // The game calls OnUpdate (and OnProcess and OnWriteProperties, if needed) when the entity changes.
             // So no need to send the new section properties explicitly here.
 
-            // Reset selected company index so first dropdown entry is selected.
+            // Get the property's current company prefab, if any.
             _selectedCompanyIndex = 0;
+            if (_changeCompanySystem.TryGetCompanyAtProperty(selectedEntity, out Entity currentCompanyEntity) &&
+                EntityManager.TryGetComponent(currentCompanyEntity, out PrefabRef currentCompanyPrefabRef))
+            {
+                Entity currentCompanyPrefab = currentCompanyPrefabRef.m_Prefab;
+
+                // Find the company info that matches the current company prefab.
+                if (_propertyCompanyInfos.ContainsKey(selectedPrefab))
+                {
+                    CompanyInfos companyInfos = _propertyCompanyInfos[selectedPrefab];
+                    for (int i = 0; i < companyInfos.Count; i++)
+                    {
+                        if (companyInfos[i].CompanyPrefab == currentCompanyPrefab)
+                        {
+                            // Use the company info's index as the selected company index for the dropdown.
+                            _selectedCompanyIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Send selected company index to UI.
             _bindingSelectedCompanyIndex.Update(_selectedCompanyIndex);
         }
 
@@ -600,23 +754,14 @@ namespace ChangeCompany
         }
 
         /// <summary>
-        /// Get the property type of the selected property and prefab.
+        /// Get the property type of the selected property.
         /// </summary>
         private PropertyType GetPropertyType()
         {
-            // Check for residential.
-            if (EntityManager.HasComponent<ResidentialProperty>(selectedEntity))
-            {
-                // If residential allows sold resources (i.e. mixed residential), then the property is commercial.
-                if (EntityManager.TryGetComponent(selectedPrefab, out BuildingPropertyData buildingPropertyData) &&
-                    buildingPropertyData.m_AllowedSold != Resource.NoResource)
-                {
-                    return PropertyType.Commercial;
-                }
-
-                // Residential that is not mixed is never any other property type.
-                return PropertyType.None;
-            }
+            // For mixed residential:
+            //      The base game and current DLCs/CCPs provide only residential mixed with commercial.
+            //      A future DLC, CCP, or mod may provide residential mixed with industrial, office, or storage.
+            //      In any case, a mixed residential property still has the *Property components below that identify the property type.
 
             // Check for commercial.
             if (EntityManager.HasComponent<CommercialProperty>(selectedEntity))
