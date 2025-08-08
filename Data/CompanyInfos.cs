@@ -9,7 +9,7 @@ namespace ChangeCompany
     /// <summary>
     /// A list of company info.
     /// </summary>
-    public class CompanyInfos : List<CompanyInfo>, IJsonWritable
+    public class CompanyInfos : List<CompanyInfo>
     {
         // Resources in the order they are displayed on the Production tab of the Economy view.
         // Excludes resources this mod does not care about (e.g. money, mail, garbage).
@@ -61,6 +61,10 @@ namespace ChangeCompany
             Resource.NoResource,
         };
 
+        // Define company infos for special companies.
+        private static readonly CompanyInfo _companyInfoRandomCompany = new CompanyInfo(SpecialCompanyType.Random);
+        private static readonly CompanyInfo _companyInfoRemoveCompany = new CompanyInfo(SpecialCompanyType.Remove);
+
         /// <summary>
         /// Constructor with no parameters.
         /// </summary>
@@ -111,14 +115,26 @@ namespace ChangeCompany
         /// <summary>
         /// Write company infos to the UI.
         /// </summary>
-        public void Write(IJsonWriter writer)
+        public void Write(IJsonWriter writer, bool includeRemoveCompany)
         {
-            writer.PropertyName("companyResourceDatas");
-            writer.ArrayBegin(this.Count);
+            writer.PropertyName("companyInfos");
+            writer.ArrayBegin(Count + 1 + (includeRemoveCompany ? 1 : 0));
+
+            // Write each standard company info.
             foreach (CompanyInfo companyInfo in this)
             {
                 companyInfo.Write(writer);
             }
+
+            // Always write a company info for random company.
+            _companyInfoRandomCompany.Write(writer);
+
+            // If requested, write a company info for remove company.
+            if (includeRemoveCompany)
+            {
+                _companyInfoRemoveCompany.Write(writer);
+            }
+
             writer.ArrayEnd();
         }
     }

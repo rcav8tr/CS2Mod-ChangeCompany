@@ -1,7 +1,7 @@
 ﻿import { bindValue, useValue, trigger           } from "cs2/api";
 import { Dropdown, DropdownItem, DropdownToggle } from "cs2/ui";
 
-import { CompanyResourceData                    } from "changeCompanyComponent";
+import { CompanyInfo                            } from "changeCompanyComponent";
 import   styles                                   from "companySelector.module.scss";
 import   mod                                      from "../mod.json";
 import { ModuleResolver                         } from "moduleResolver";
@@ -13,7 +13,7 @@ const bindingSelectedCompanyIndex = bindValue<number>(mod.id, "SelectedCompanyIn
 // Define props for company selector dropdown.
 type CompanySelectorProps =
     {
-        companyResourceDatas: CompanyResourceData[]
+        companyInfos: CompanyInfo[]
     }
 
 // Custom dropdown for selecting a company.
@@ -29,16 +29,16 @@ export const CompanySelector = (props: CompanySelectorProps) =>
     let selectedCompanyDropdownItemContent: JSX.Element = <></>;
     const noResource: string = "NoResource";
     let companyInfoCounter: number = 0;
-    const companyDropdownItems: JSX.Element[] = props.companyResourceDatas.map
+    const companyDropdownItems: JSX.Element[] = props.companyInfos.map
         (
-            (companyResourceData: CompanyResourceData) =>
+            (companyInfo: CompanyInfo) =>
             {
                 // Get company resources.
-                const resourceOutput: string = companyResourceData.resourceOutput;
-                const resourceInput1: string = companyResourceData.resourceInput1;
-                const resourceInput2: string = companyResourceData.resourceInput2;
+                const resourceOutput: string = companyInfo.resourceOutput;
+                const resourceInput1: string = companyInfo.resourceInput1;
+                const resourceInput2: string = companyInfo.resourceInput2;
 
-                // A company always has an output resource.
+                // A company always has an output resource or is a special company.
                 // Get whether or not there are input resources.
                 const hasInput1: boolean = resourceInput1 != noResource;
                 const hasInput2: boolean = resourceInput2 != noResource;
@@ -48,22 +48,22 @@ export const CompanySelector = (props: CompanySelectorProps) =>
 
                 // Get company info index.
                 // Cannot use companyInfoCounter directly because its value changes for each entry.
-                // Using companyInfoCounter directly results in all dropdown entires having the same index value as the last one.
+                // Using companyInfoCounter directly results in all dropdown entries having the same index value as the last one.
                 const companyInfoIndex: number = companyInfoCounter;
 
                 // Construct dropdown item content.
-                // Left always has the output resource.
+                // Left always has the output resource or special company.
                 // Right has nothing, input1, or input1+input2 resources.
                 const dropdownItemContent: JSX.Element =
-                    <div className={styles.companyDropdownRow}>
-                        <div className={joinClasses(ModuleResolver.instance.InfoRowClasses.left, styles.companyDropdownItemLeft)}>
-                            <ResourceIconLabel resource={resourceOutput} trailingConcatenator={false} />
+                    <div className={styles.changeCompanyDropdownRow}>
+                        <div className={joinClasses(ModuleResolver.instance.InfoRowClasses.left, styles.changeCompanyDropdownItemLeft)}>
+                            <ResourceIconLabel specialCompanyType={companyInfo.specialType} resource={resourceOutput} trailingConcatenator={false} />
                         </div>
                         {hasInput1 &&
                             <div className={ModuleResolver.instance.InfoRowClasses.right}>
-                                <ResourceIconLabel resource={resourceInput1} trailingConcatenator={hasInput2} />
+                                <ResourceIconLabel specialCompanyType={companyInfo.specialType} resource={resourceInput1} trailingConcatenator={hasInput2} />
                                 {hasInput2 &&
-                                    <ResourceIconLabel resource={resourceInput2} trailingConcatenator={false} />
+                                    <ResourceIconLabel specialCompanyType={companyInfo.specialType} resource={resourceInput2} trailingConcatenator={false} />
                                 }
                             </div>
                         }
@@ -83,7 +83,7 @@ export const CompanySelector = (props: CompanySelectorProps) =>
                         value=""
                         closeOnSelect={true}
                         selected={selected}
-                        className={styles.companyDropdownItem}
+                        className={styles.changeCompanyDropdownItem}
                         onChange={() => trigger(mod.id, "SelectedCompanyChanged", companyInfoIndex)}
                         focusKey={ModuleResolver.instance.FOCUS_DISABLED}
                     >

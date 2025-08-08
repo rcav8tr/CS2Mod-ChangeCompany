@@ -1,4 +1,4 @@
-﻿.companyDropdownRow {
+﻿.changeCompanyDropdownRow {
     width:              calc(325rem + 240rem * (var(--fontScale) - 1));
     padding-top:        calc(1rem + 10rem * (var(--fontScale) - 1));
     display:            flex;
@@ -6,11 +6,11 @@
     flex-wrap:          wrap;
 }
 
-.companyDropdownItem {
+.changeCompanyDropdownItem {
     padding-top:        0rem;
     padding-bottom:     0rem;
 }
 
-.companyDropdownItemLeft {
+.changeCompanyDropdownItemLeft {
     margin-right:       6rem;
 }

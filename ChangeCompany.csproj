@@ -9,7 +9,7 @@
         <!--The file where mod information which is required for publishing mod on PDX mods are stored-->
         <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
         <Title>Change Company</Title>
-        <Version>1.1.0</Version>
+        <Version>2.0.0</Version>
         <Description>Change the company for a commercial, industrial, or office building.</Description>
         <Copyright>Copyright © 2025</Copyright>
         <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
@@ -115,5 +115,20 @@
     <Import Project="Properties\PublishConfiguration.csproj" />
     <ItemGroup>
         <None Include="Properties\PublishConfiguration.csproj" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <None Update="Images\LockClosed.svg">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Images\LockOpen.svg">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Images\Random.svg">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Images\Remove.svg">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>    
 </Project>

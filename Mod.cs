@@ -1,7 +1,14 @@
-﻿using Colossal.Logging;
+﻿using Colossal.IO.AssetDatabase;
+using Colossal.Logging;
+using Colossal.UI;
 using Game;
 using Game.Modding;
+using Game.SceneFlow;
+using Game.UI.InGame;
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using Unity.Entities;
 
 namespace ChangeCompany
@@ -17,6 +24,9 @@ namespace ChangeCompany
             .SetShowsErrorsInUI(true)                       // Show message in UI for severity level Error and above.
             .SetShowsStackTraceAboveLevels(Level.Error);    // Include stack trace for severity level Error and above.
 
+        // The global settings for this mod.
+        public static ModSettings ModSettings { get; set; }
+
         /// <summary>
         /// One-time mod loading.
         /// </summary>
@@ -26,17 +36,78 @@ namespace ChangeCompany
             
             try
             {
+                // Register and load mod settings.
+                ModSettings = new ModSettings(this);
+                ModSettings.RegisterInOptionsUI();
+                AssetDatabase.global.LoadSettings(ModAssemblyInfo.Name, ModSettings, new ModSettings(this));
+                ModSettings.Loaded();
+
                 // Initialize translations.
                 Translation.Initialize();
 
-                // Create this mod's ChangeCompanySection which contains the logic
-                // for a new section in the game's selected info view in the UI.
-                // This is not a system that updates directly in a system update phase.
-                // Instead, updates are handled by SelectedInfoUISystem.
-                // The section just needs to be created.
-                World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<ChangeCompanySection>();
+                // Add mod UI images directory to UI resource handler.
+                // When the URI is used to access an image, the game forces the URI portion to lower case.
+                // So make the URI lower case here to be compatible.
+                if (!GameManager.instance.modManager.TryGetExecutableAsset(this, out ExecutableAsset modExecutableAsset))
+                {
+                    log.Error("Unable to get mod executable asset.");
+                    return;
+                }
+                string assemblyPath = Path.GetDirectoryName(modExecutableAsset.path);
+                string imagesPath = Path.Combine(assemblyPath, "Images");
+                UIManager.defaultUISystem.AddHostLocation(ModAssemblyInfo.Name.ToLower(), imagesPath);
 
-                // Create and activate this mod's ChangeCompanySystem which contains the logic to change the company on a property.
+                // Create this mod's sections for the game's building info display in the UI.
+                // These are not systems that update directly in a system update phase.
+                // Instead, updates are handled by SelectedInfoUISystem which runs in UIUpdate phase.
+                // The sections just need to be created.
+                World defaultWorld = World.DefaultGameObjectInjectionWorld;
+                ChangeCompanySection changeCompanySection = defaultWorld.GetOrCreateSystemManaged<ChangeCompanySection>();
+                LockCompanySection   lockCompanySection   = defaultWorld.GetOrCreateSystemManaged<LockCompanySection  >();
+                    
+                // Use reflection to get the list of middle sections from SelectedInfoUISystem.
+                FieldInfo fieldInfoMiddleSections = typeof(SelectedInfoUISystem).GetField("m_MiddleSections", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (fieldInfoMiddleSections == null)
+                {
+                    log.Error($"{nameof(Mod)}.{nameof(OnLoad)} Unable to find middle sections in SelectedInfoUISystem.");
+                    return;
+                }
+                SelectedInfoUISystem selectedInfoUISystem = defaultWorld.GetOrCreateSystemManaged<SelectedInfoUISystem>();
+                List<ISectionSource> middleSections = (List<ISectionSource>)fieldInfoMiddleSections.GetValue(selectedInfoUISystem);
+                if (middleSections == null)
+                {
+                    log.Error($"{nameof(Mod)}.{nameof(OnLoad)} Unable to get middle sections from SelectedInfoUISystem.");
+                    return;
+                }
+
+                // Get the index of the game's CompanySection.
+                int companySectionIndex = -1;
+                for (int i = 0; i < middleSections.Count; i++)
+                {
+                    if (middleSections[i] is CompanySection)
+                    {
+                        companySectionIndex = i;
+                        break;
+                    }
+                }
+
+                // Check if game's CompanySection was found.
+                if (companySectionIndex == -1)
+                {
+                    // Log an error and add this mod's sections to the end.
+                    log.Error($"[{ModAssemblyInfo.Title}] Unable to find CompanySection in middle sections from SelectedInfoUISystem.");
+                    middleSections.Add(changeCompanySection);
+                    middleSections.Add(lockCompanySection);
+                }
+                else
+                {
+                    // Insert ChangeCompanySection and LockCompanySection right after the game's CompanySection.
+                    // This is the order they will be displayed by the game.
+                    middleSections.Insert(companySectionIndex + 1, changeCompanySection);
+                    middleSections.Insert(companySectionIndex + 2, lockCompanySection);
+                }
+
+                // Create and activate this mod's ChangeCompanySystem which contains the logic to change or remove the company on a property.
                 // In the game, this logic is normally executed in the GameSimulation phase.
                 // Of course, the GameSimulation phase runs only when the simulation is running.
                 // It is highly desired to allow the player to change companies while the game is paused.
@@ -52,8 +123,8 @@ namespace ChangeCompany
                 //    if (!keyValue.Key.StartsWith("Assets."))
                 //    {
                 //        //if (keyValue.Key.ToLower().Contains("concat"))
-                //        //if (keyValue.Key.StartsWith("Resource"))
-                //        if (keyValue.Value == "+")
+                //        if (keyValue.Key.Contains("ChangeCompany"))
+                //        //if (keyValue.Value == "Quit Game")
                 //        {
                 //            log.Info(keyValue.Key + "\t" + keyValue.Value);
                 //        }
@@ -67,7 +138,7 @@ namespace ChangeCompany
                 //    localizationManager.SetActiveLocale(localeID);
                 //    foreach (System.Collections.Generic.KeyValuePair<string, string> keyValue in localizationManager.activeDictionary.entries)
                 //    {
-                //        if (keyValue.Key == "SelectedInfoPanel.COMPANY_STORES")
+                //        if (keyValue.Key == "ChangeCompany.ChangeCompany")
                 //        {
                 //            log.Info(keyValue.Key + "\t" + localeID + "\t" + keyValue.Value);
                 //            break;
@@ -92,7 +163,9 @@ namespace ChangeCompany
         {
             log.Info($"{nameof(Mod)}.{nameof(OnDispose)}");
 
-            // Nothing to do here.  But implementation is required.
+            // Unregister mod settings.
+            ModSettings?.UnregisterInOptionsUI();
+            ModSettings = null;
         }
     }
 }

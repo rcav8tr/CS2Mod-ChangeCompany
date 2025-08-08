@@ -16,45 +16,61 @@
     <LongDescription>
 # Change Company
 Change the company for a commercial, industrial, or office building.
-- Commercial includes mixed residential buildings.
+- Mixed residential buildings are included.
 - Industrial includes production and storage buildings.
 
-# Description
-Ways you might use this mod:
+# Lock Company
+Lock a company to prevent it from moving away.
+
+ 
+# Change Company - Description
+Some possible reasons to change a company:
 - Better manage the production chain to produce, sell, or store more or less of a resource.
 - Group together or spread out production of the same resource.
 - Place a storage building near where a resource is extracted, required, produced, or sold (e.g. using **Plop the Growables** mod).
   Then use **Change Company** to change the company (i.e. resource) stored at the storage building.
-  This may improve traffic flow by reducing the distance trucks need to travel to obtain or deliver resources.
-- Use together with my **Resource Locator** mod which locates buildings where resources are required, produced, sold, and stored.
+  This may improve traffic flow by reducing truck travel distance to obtain or deliver resources.
 
-To change the company on a building:
+The **Change Company** feature is intended to be used together with my **Resource Locator** mod
+which locates buildings where resources are required, produced, sold, and stored.
+
+To change a company:
 - Select a building to display its information.
-- If the company can be changed (see Restrictions below), the Change Company section will be displayed.
+- If the company can be changed (see **Restrictions** below), the **Change Company** section will be displayed.
 - Choose the new company in the dropdown based on the resource you want the new company to sell, produce, or store.
   The company dropdown defaults to the current company, if any.
-- Click on the Change Now button.
-  The company is changed immediately, even if the simulation is paused.
+  To change to a random company, choose **Random** in the dropdown.
+  To remove the current company, choose **Remove** in the dropdown.
+- To change the company on the current building, click **Change This**.
+- To change all existing companies that are like the current company, click **Change All**.
+  If **Random** is chosen in the dropdown, each company that is changed is assigned its own random company
+  (i.e. they do not all get the same random company).
+- The change is immediate, even if the simulation is paused.
 
-Upon changing a company:
-- All employees of any existing company are layed off.
+Upon changing a company to a new company:
+- All employees of any current company are layed off.
   The new company will hire its own employees, which may or may not be the same employees that were layed off.
 - If the building has no custom name, the building will be named according to the brand of the new company.
   If the building has a custom name, the custom name will be retained after the company is changed.
   To restore a building name to its default (i.e. company brand and address), change the building name to blank.
+- If the current company was individually locked (see **Lock Company** below), the new company will be individually locked.
 - The new company operates the same as if the game assigned the company to the building.
-- Changing a company does not prevent the company from moving away based on the game's normal logic.
-  The game's normal logic may move a company away because of bankruptcy or random chance.
-  The random chance of a company moving away increases with its tax rate and lack of workers.
 
+Upon removing a company:
+- All employees of the current company are layed off.
+- Once the simulation runs, the building is placed back on the market and the game may assign a new company to the building.
+- The building operates the same as if the game created the building without a company.
+  The game will use its normal logic to assign a new company to the building
+  or you can use **Change Company** to assign a new company to the building immediately.
 
-# Restrictions
-The mod has the following restrictions on changing a company:
+### Change Company - Restrictions
+The **Change Company** feature has the following restrictions:
 - The company cannot be changed on a building that is:
   service (has no company), extractor, under construction, abandoned, condemned, deleted, destroyed, or outside connection.
 - The company cannot be changed on a building that allows only one resource to be sold, produced, or stored.
   For example, a gas station can sell only Petrochemicals.
   The company on a gas station cannot be changed to sell any resource other than Petrochemicals.
+  Note that most signature buildings allow only one resource.
 - The company cannot be changed to one that sells, produces, or stores a resource other than the building allows.
   For example, an ore storage building allows only Ore, Coal, or Stone to be stored.
   The company on an ore storage building cannot be changed to store any resource other than Ore, Coal, or Stone.
@@ -65,20 +81,73 @@ that allows the desired resource to be sold, produced, or stored or that is the 
 Then use **Change Company** to change the company in that building.
 
 
-# Compatibility
-The mod is translated into all the languages supported by the base game.
+# Lock Company - Description
+Locking a company prevents the game from the moving the company away.
+The game's normal logic may move a company away because of bankruptcy or random chance.
+The random chance of a company moving away increases with its tax rate and lack of workers.
+You may want to lock a company after changing it (see **Lock After Change** in **Options** below).
 
+To lock a company on its building:
+- Select a building to display its information.
+- If the company can be locked (see **Restrictions** below), the **Lock Company** section will be displayed.
+- The locked status of the current company is shown by the lock indicator.
+  To toggle the current company between locked and unlocked, click the **lock indicator**.
+- To lock or unlock all existing individual companies that are like the current company, click **Lock All** or **Unlock All**.
+  The current company will be affected.
+  New companies will not be affected.
+
+To lock or unlock all companies in the city, see **Options** below.
+
+### Lock Company - Restrictions
+The **Lock Company** feature has the following restrictions:
+- The company cannot be locked on a building that is:
+  service (has no company), extractor (never moves away), under construction, abandoned, condemned, deleted, destroyed, or outside connection.
+- The company cannot be locked on a building that does not already have a company (i.e. cannot not lock something that does not exist).
+- The company cannot be locked if the **Lock All Companies** option is set (see **Options** below).
+
+
+# Options
+The mod options are described below.
+
+### Lock After Change
+When this option is clear (default):
+- The new company is not automatically locked after the company is changed.
+- The new company is still automatically locked if the current company was locked before being changed.
+
+When this option is set:
+- The new company is automatically locked after the company is changed.
+- This happens even if the current company was not locked before being changed.
+- This happens even if the **Lock All Companies** option (below) is set.
+
+### Lock All Companies
+When this option is clear (default):
+- All companies in the city are not locked.
+- Use the **Lock Company** feature to lock or unlock individual companies, subject to the restrictions above.
+
+When this option is set:
+- All companies in the city are locked.
+- The **Lock Company** section on the building info display is hidden.
+- Any new companies will be locked.
+- Any existing locks on individual companies will take effect again if this option is later cleared.
+
+### Unlock All Companies
+Remove the lock on all individual companies in the city.
+This option is available only while in a game.
+
+
+# Compatibility
+This mod is translated into all the languages supported by the base game.
+
+This mod is not compatible with the **Economy Fixes** mod by nucleartux, which is currently broken.
 There are no known compatibility issues with any other mods.
 
 This mod can be safely disabled or unsubscribed at any time.
-Disabling or unsubscribing this mod does not affect companies that were changed using this mod 
-(e.g. a building will not revert to its previous company).
+- Disabling or unsubscribing this mod does not affect companies that were changed using this mod 
+  (e.g. a building will not revert to its previous company).
+- Disabling or unsubscribing this mod will cause all individual company locks to be lost when the game is saved.
 
+To receive an invitation to the Discord server for mod discussion, go to:  [https://discord.gg/HTav7ARPs2](https://discord.gg/HTav7ARPs2)
 
-# Possible Future Enhancements
-Here are some possible future enhancements that were thought about during development but not included initially:
-- Allow a company to be "locked" on its building to prevent the company from moving away based on the game's normal logic.
-  Possibly do this as a separate mod.
 
 # Acknowledgements
 The following mods were used in the development of this mod:
@@ -91,8 +160,13 @@ The following mods were used in the development of this mod:
     <Thumbnail Value="Properties/Thumbnail.png" />
 
     <!-- Screenshot.  Copied from Screenshots folder.  Include no spaces in file names.  Max file size is 2.1MB.  Can be set multiple times. -->
-    <Screenshot Value="Properties\Screenshots\10Thumnail.png" />
-    <Screenshot Value="Properties\Screenshots\20Examples.png" />
+    <Screenshot Value="Properties\Screenshots\10Thumbnail.png" />
+    <Screenshot Value="Properties\Screenshots\20ChangeCompanyCommercial.png" />
+    <Screenshot Value="Properties\Screenshots\30ChangeCompanyIndustrial.png" />
+    <Screenshot Value="Properties\Screenshots\40ChangeCompanyOffice.png" />
+    <Screenshot Value="Properties\Screenshots\50ChangeCompanyStorage.png" />
+    <Screenshot Value="Properties\Screenshots\60LockCompany.png" />
+    <Screenshot Value="Properties\Screenshots\70Options.png" />
 
 
     <!-- Tag.  Can be set multiple times. -->
@@ -102,7 +176,7 @@ The following mods were used in the development of this mod:
     <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/change-company.1808488/" />
 
     <!-- Version of the mod.  Copied from assembly Version. -->
-    <ModVersion Value="1.1.0" />
+    <ModVersion Value="2.0.0" />
 
     <!-- Recommended version of the base game to use the mod. -->
     <GameVersion Value="1.3.*" />
@@ -116,12 +190,19 @@ The following mods were used in the development of this mod:
 
     <!-- Change log.  Copied from ChangeLog.md file.  Supports minimal markdown subset. -->
     <ChangeLog>
-- Allow change company on signature buildings, still subject to other restrictions.
-- Allow for mixed residential other than commercial, available only thru mods.
-- The company dropdown defaults to the current company, if any.
+New features available:
+- Change all existing companies like the current company to the selected company.
+- Change to a random company.
+- Remove a company.
+- Lock a company to prevent it from moving away.
+- Lock or unlock all existing companies like the current company.
+- Automatically lock a company when it is changed.
+- Lock all companies in the city.
+- Remove the lock from all existing individual companies in the city.
 </ChangeLog>
 
     <!-- External links.  Can be set multiple times. -->
     <!-- Supported types are discord, github, youtube, twitch, x, paypal, patreon, buymeacoffee, kofi, crowdin, gitlab, gofundme. -->
     <ExternalLink Type="github" Url="https://github.com/rcav8tr/CS2Mod-ChangeCompany" />
+    <ExternalLink Type="discord" Url="https://discord.com/channels/1024242828114673724/1219579814055514112/threads/1403370143429562461" />
 </Publish>

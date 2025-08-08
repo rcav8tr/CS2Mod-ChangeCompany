@@ -9,9 +9,11 @@ using Game.Notifications;
 using Game.Pathfind;
 using Game.Prefabs;
 using Game.Simulation;
+using Game.Tools;
 using Game.Triggers;
 using Game.UI.InGame;
 using System;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -25,6 +27,7 @@ namespace ChangeCompany
     public partial class ChangeCompanySystem : GameSystemBase
     {
         // Other systems.
+        private ChangeCompanySection    _changeCompanySection;
         private EndFrameBarrier         _endFrameBarrier;
         private IconCommandSystem       _iconCommandSystem;
         private PrefabSystem            _prefabSystem;
@@ -36,18 +39,19 @@ namespace ChangeCompany
         private EntityArchetype _pathTargetMovedEventArchetype;
 
         // Entity queries.
+        private EntityQuery     _companyQueryCommercial;
+        private EntityQuery     _companyQueryIndustrial;
         private EntityQuery     _economyParameterDataQuery;
         private EntityQuery     _workProviderParameterDataQuery;
 
-        // Data from ChangeCompanySection for changing the company on a property
-        private readonly object _changeCompanyLock = new object();  // Used to lock the thread while writing or reading the change company data.
-        private Entity          _changeCompanyNewCompanyPrefab;     // The prefab to use for the new company.
-        private Entity          _changeCompanyPropertyEntity;       // The property entity to be changed.
-        private Entity          _changeCompanyPropertyPrefab;       // The property prefab to be changed.
-        private PropertyType    _changeCompanyPropertyType;         // The property type of the property to be changed.
+        // Data from ChangeCompanySection for changing or removing a company.
+        ChangeCompanyData _changeCompanyData;
 
         // Data for post-change initialization.
-        private Entity _postChangePropertyEntity;
+        private List<Entity> _postChangePropertyEntities;
+
+        // Random seed.
+        private RandomSeed _randomSeed;
 
         // Miscellaneous.
         private bool _inGame;       // Whether or not application is in a game (i.e. as opposed to main menu, editor, etc.).
@@ -66,10 +70,11 @@ namespace ChangeCompany
             try
             {
                 // Get other systems.
+                _changeCompanySection   = World.GetOrCreateSystemManaged<ChangeCompanySection>();
                 _endFrameBarrier        = World.GetOrCreateSystemManaged<EndFrameBarrier     >();
                 _iconCommandSystem      = World.GetOrCreateSystemManaged<IconCommandSystem   >();
-                _prefabSystem           = World.GetExistingSystemManaged<PrefabSystem        >();
-                _selectedInfoUISystem   = World.GetExistingSystemManaged<SelectedInfoUISystem>();
+                _prefabSystem           = World.GetOrCreateSystemManaged<PrefabSystem        >();
+                _selectedInfoUISystem   = World.GetOrCreateSystemManaged<SelectedInfoUISystem>();
                 _triggerSystem          = World.GetOrCreateSystemManaged<TriggerSystem       >();
 
                 // Initialize event archetypes.
@@ -80,6 +85,25 @@ namespace ChangeCompany
                 _pathTargetMovedEventArchetype = base.EntityManager.CreateArchetype(
                     ComponentType.ReadWrite<Event>(),
                     ComponentType.ReadWrite<PathTargetMoved>());
+
+                // Queries to get commercial or industrial/office/storage companies.
+                // A separate query is used for each to reduce the number of companies to check.
+                _companyQueryCommercial = GetEntityQuery(
+                    ComponentType.ReadOnly<CompanyData      >(),
+                    ComponentType.ReadOnly<PrefabRef        >(),
+                    ComponentType.ReadOnly<CommercialCompany>(),
+                    ComponentType.ReadOnly<PropertyRenter   >(),
+                    ComponentType.Exclude<MovingAway        >(),
+                    ComponentType.Exclude<Deleted           >(),
+                    ComponentType.Exclude<Temp              >());
+                _companyQueryIndustrial = GetEntityQuery(
+                    ComponentType.ReadOnly<CompanyData      >(),
+                    ComponentType.ReadOnly<PrefabRef        >(),
+                    ComponentType.ReadOnly<IndustrialCompany>(),
+                    ComponentType.ReadOnly<PropertyRenter   >(),
+                    ComponentType.Exclude<MovingAway        >(),
+                    ComponentType.Exclude<Deleted           >(),
+                    ComponentType.Exclude<Temp              >());
 
                 // Initialize EconomyParameterData entity query.
                 // Query copied from PropertyProcessingSystem.
@@ -95,10 +119,10 @@ namespace ChangeCompany
                 });
 
                 // Initialize change company data.
-                ResetChangeCompanyData();
+                _changeCompanyData = null;
 
                 // Initialize post-change data.
-                _postChangePropertyEntity = Entity.Null;
+                _postChangePropertyEntities = new();
 
                 // Initialize miscellaneous.
                 _inGame = false;
@@ -129,16 +153,18 @@ namespace ChangeCompany
         protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
         {
             base.OnGameLoadingComplete(purpose, mode);
-            Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(OnGameLoadingComplete)} mode={mode}");
 
             // If started a game, then initialize.
             if (mode == GameMode.Game)
             {
-                // Reset change company data to prevent processing of any change company request from a previous game.
-                ResetChangeCompanyData();
+                // Reset change company data to prevent processing any change company request from a previous game.
+                _changeCompanyData = null;
 
                 // Reset post-change data.
-                _postChangePropertyEntity = Entity.Null;
+                _postChangePropertyEntities.Clear();
+
+                // Initialize random numbers.
+                _randomSeed = RandomSeed.Next();
 
                 // In a game.  Set this last because this allows OnUpdate to run and everything else should be initialized before then.
                 _inGame = true;
@@ -151,34 +177,12 @@ namespace ChangeCompany
         }
 
         /// <summary>
-        /// Request this system to change the company on the property.
+        /// Request this system to change or remove one or all companies.
         /// </summary>
-        public void ChangeCompany(Entity newCompanyPrefab, Entity propertyEntity, Entity propertyPrefab, PropertyType propertyType)
+        public void ChangeCompany(ChangeCompanyData changeCompanyData)
         {
-            // Lock the thread while writing change company data.
-            lock(_changeCompanyLock)
-            {
-                _changeCompanyNewCompanyPrefab = newCompanyPrefab;
-                _changeCompanyPropertyEntity   = propertyEntity;
-                _changeCompanyPropertyPrefab   = propertyPrefab;
-                _changeCompanyPropertyType     = propertyType;
-            }
-        }
-        
-        /// <summary>
-        /// Reset change company data.
-        /// </summary>
-        private void ResetChangeCompanyData()
-        {
-            // Lock thread while writing change company data.
-            lock(_changeCompanyLock)
-            {
-                // Clear change company data to indicate there is no change company requested.
-                _changeCompanyNewCompanyPrefab = Entity.Null;
-                _changeCompanyPropertyEntity   = Entity.Null;
-                _changeCompanyPropertyPrefab   = Entity.Null;
-                _changeCompanyPropertyType     = PropertyType.None; 
-            }
+            // Save the data from the ChangeCompanySection.
+            _changeCompanyData = changeCompanyData;
         }
 
         /// <summary>
@@ -202,53 +206,53 @@ namespace ChangeCompany
             // Check if post-change initialization should be performed from the previous frame.
             CheckPostChangeInitialization();
 
-            // Lock the thread while reading change company data.
-            Entity newCompanyPrefab;
-            Entity propertyEntity;
-            Entity propertyPrefab;
-            PropertyType propertyType;
-            lock (_changeCompanyLock)
+            // Check if there is a change company request.
+            if (_changeCompanyData == null)
             {
-                // Use property type to check if change company was requested.
-                if (_changeCompanyPropertyType == PropertyType.None)
-                {
-                    // This is not an error.
-                    // There is simply no pending change company request.
-                    return;
-                }
-
-                // Get change company data.
-                newCompanyPrefab = _changeCompanyNewCompanyPrefab;
-                propertyEntity   = _changeCompanyPropertyEntity;
-                propertyPrefab   = _changeCompanyPropertyPrefab;
-                propertyType     = _changeCompanyPropertyType;
+                // This is not an error.
+                // There is simply no pending change company request.
+                return;
             }
 
-            // Reset change company data to prevent processing this change company request again.
-            ResetChangeCompanyData();
-
-            // Info logging.
-            Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(OnUpdate)} newCompanyPrefab={_prefabSystem.GetPrefabName(newCompanyPrefab)}");
-            Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(OnUpdate)} propertyPrefab  ={_prefabSystem.GetPrefabName(propertyPrefab)}");
-            Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(OnUpdate)} propertyType    ={propertyType}");
-
-            // Process the change company request.
-            // This logic will be executed only occasionally based on a user action.
-            // This logic acts on only one property (building).
-            // This logic acts on only the current company (if any) and the newly created company.
-            // There are not many operations being performed on the property and the two companies.
-            // Therefore, performance is not critical.
-            // Because performance is not critical, a job is not used.
             try
             {
-                // Create an entity command buffer on the EndFrameBarrier system.
-                EntityCommandBuffer entityCommandbuffer = _endFrameBarrier.CreateCommandBuffer();
+                // Process the change company request.
+                switch (_changeCompanyData.requestType)
+                {
+                    case RequestType.ChangeOneToSpecified:
+                        ChangeOneCompanyToSpecified(
+                            _changeCompanyData.newCompanyPrefab,
+                            _changeCompanyData.propertyEntity,
+                            _changeCompanyData.propertyPrefab,
+                            _changeCompanyData.propertyType);
+                        break;
 
-                // Move away the current company of the property.
-                MoveAwayCompany(propertyEntity, entityCommandbuffer);
-            
-                // Create a new company and assign it to the property.
-                CreateCompany(newCompanyPrefab, propertyEntity, propertyPrefab, propertyType, entityCommandbuffer);
+                    case RequestType.ChangeOneToRandom:
+                        ChangeOneCompanyToRandom(
+                            _changeCompanyData.companyInfos,
+                            _changeCompanyData.propertyEntity,
+                            _changeCompanyData.propertyPrefab,
+                            _changeCompanyData.propertyType);
+                        break;
+
+                    case RequestType.RemoveOne:
+                        RemoveOneCompany(
+                            _changeCompanyData.propertyEntity,
+                            _changeCompanyData.propertyPrefab);
+                        break;
+
+                    case RequestType.ChangeAllToSpecified:
+                    case RequestType.ChangeAllToRandom:
+                    case RequestType.RemoveAll:
+                        ChangeRemoveAllCompanies(
+                            _changeCompanyData.requestType,
+                            _changeCompanyData.newCompanyPrefab,
+                            _changeCompanyData.companyInfos,
+                            _changeCompanyData.propertyEntity,
+                            _changeCompanyData.propertyPrefab,
+                            _changeCompanyData.propertyType);
+                        break;
+                }
 
                 // Update selected info in UI.
                 _selectedInfoUISystem.RequestUpdate();
@@ -257,30 +261,158 @@ namespace ChangeCompany
             {
                 Mod.log.Error(ex);
             }
+            finally
+            {
+                // Prevent processing this change company request again.
+                _changeCompanyData = null;
+            }
+        }
+
+        /// <summary>
+        /// Change one company to the specified new company.
+        /// </summary>
+        private void ChangeOneCompanyToSpecified(Entity newCompanyPrefab, Entity propertyEntity, Entity propertyPrefab, PropertyType propertyType)
+        {
+            // Create an entity command buffer on the EndFrameBarrier system.
+            EntityCommandBuffer entityCommandbuffer = _endFrameBarrier.CreateCommandBuffer();
+
+            // Move away the current company of the property.
+            bool companyWasLocked = MoveAwayCompany(propertyEntity, propertyPrefab, entityCommandbuffer);
+            
+            // Create a new company and assign it to the property.
+            CreateCompany(newCompanyPrefab, propertyEntity, propertyPrefab, propertyType, companyWasLocked, entityCommandbuffer);
+        }
+
+        /// <summary>
+        /// Change one company to a random new company.
+        /// </summary>
+        private void ChangeOneCompanyToRandom(CompanyInfos companyInfos, Entity propertyEntity, Entity propertyPrefab, PropertyType propertyType)
+        {
+            // Get a random new company prefab from among the company infos for the property.
+            Unity.Mathematics.Random random = _randomSeed.GetRandom(DateTime.Now.Millisecond);
+            int randomIndex = random.NextInt(companyInfos.Count);
+            Entity newCompanyPrefab = companyInfos[randomIndex].CompanyPrefab;
+
+            // Process as if requested to change one company to a specified new company.
+            ChangeOneCompanyToSpecified(newCompanyPrefab, propertyEntity, propertyPrefab, propertyType);
+        }
+
+        /// <summary>
+        /// Remove one company.
+        /// </summary>
+        private void RemoveOneCompany(Entity propertyEntity, Entity propertyPrefab)
+        {
+            // Create an entity command buffer on the EndFrameBarrier system.
+            EntityCommandBuffer entityCommandbuffer = _endFrameBarrier.CreateCommandBuffer();
+
+            // Move away the current company of the property.
+            // When removing a company, do not care if the company was locked.
+            MoveAwayCompany(propertyEntity, propertyPrefab, entityCommandbuffer);
+
+            // If property is on the market, take property off the market.
+            if (EntityManager.HasComponent<PropertyOnMarket>(propertyEntity))
+            {
+                entityCommandbuffer.RemoveComponent<PropertyOnMarket>(propertyEntity);
+            }
+
+            // Following logic is adapted from CompanyMoveAwaySystem.MovingAwayJob.
+            // This logic completes what the game would have done to move away a company when
+            // a new company is not being reassigned immediately like this mod does when changing the company.
+
+            // Add PropertyToBeOnMarket component.
+            // Let the normal game logic (PropertyProcessingSystem.PutPropertyOnMarketJob)
+            // complete the work of putting the property on the market.
+            // The normal game logic includes special handling to assign a company to a signature building.
+            // The normal game logic runs only in GameSimulation phase.
+            // It is acceptable to wait for the simulation to run before the property is placed on the market.
+            entityCommandbuffer.AddComponent(propertyEntity, default(PropertyToBeOnMarket));
+
+            // Create a RentersUpdated event on the property.
+            CreateRentersUpdatedEvent(propertyEntity, entityCommandbuffer);
+        }
+
+        /// <summary>
+        /// For all companies that are like the company on the property, do one of the following:
+        ///     Change the company to the specified new company.
+        ///     Change the company to a random new company.
+        ///     Remove the company.
+        /// </summary>
+        private void ChangeRemoveAllCompanies(
+            RequestType requestType,
+            Entity newCompanyPrefab,
+            CompanyInfos companyInfos,
+            Entity propertyEntity,
+            Entity propertyPrefab,
+            PropertyType propertyType)
+        {
+            // Get the prefab for the current company on the property.
+            if (CompanyUtilities.TryGetCompanyAtProperty(EntityManager, propertyEntity, propertyPrefab, out Entity companyEntity) &&
+                EntityManager.TryGetComponent(companyEntity, out PrefabRef companyPrefabRef))
+            {
+                Entity currentCompanyPrefab = companyPrefabRef.m_Prefab;
+
+                // Check each commercial or industrial/office/storage company.
+                EntityQuery companyQuery = propertyType == PropertyType.Commercial ? _companyQueryCommercial : _companyQueryIndustrial;
+                foreach (Entity companyToCheckEntity in companyQuery.ToEntityArray(Allocator.Temp))
+                {
+                    // Use the company prefab to determine if the company to check is "like" the current company.
+                    if (EntityManager.TryGetComponent(companyToCheckEntity, out PrefabRef companyToCheckPrefabRef) &&
+                        companyToCheckPrefabRef.m_Prefab == currentCompanyPrefab)
+                    {
+                        // Get property entity and property prefab of the company to check.
+                        if (EntityManager.TryGetComponent(companyToCheckEntity, out PropertyRenter propertyRenter) &&
+                            EntityManager.TryGetComponent(propertyRenter.m_Property, out PrefabRef propertyPrefabRef))
+                        {
+                            Entity propertyToCheckEntity = propertyRenter.m_Property;
+                            Entity propertyToCheckPrefab = propertyPrefabRef.m_Prefab;
+
+                            // Check for remove company versus change company.
+                            if (requestType == RequestType.RemoveAll)
+                            {
+                                // It was already determined above that the company to check has a property.
+                                // Therefore, the company to check can be removed from the property to check.
+                                // Process as if requested to remove one company.
+                                RemoveOneCompany(propertyToCheckEntity, propertyToCheckPrefab);
+                            }
+                            else
+                            {
+                                // Verify company can change on the property to check.
+                                if (_changeCompanySection.CompanyCanChange(propertyToCheckEntity, propertyToCheckPrefab))
+                                {
+                                    // Check for specified versus random.
+                                    if (requestType == RequestType.ChangeAllToSpecified)
+                                    {
+                                        // Process as if requested to change one company to a specified new company.
+                                        ChangeOneCompanyToSpecified(newCompanyPrefab, propertyToCheckEntity, propertyToCheckPrefab, propertyType);
+                                    }
+                                    else
+                                    {
+                                        // Process as if requested to change one company to a random new company.
+                                        ChangeOneCompanyToRandom(companyInfos, propertyToCheckEntity, propertyToCheckPrefab, propertyType);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
         /// Move away the current company of the property.
         /// </summary>
-        private void MoveAwayCompany(Entity propertyEntity, EntityCommandBuffer entityCommandbuffer)
+        private bool MoveAwayCompany(Entity propertyEntity, Entity propertyPrefab, EntityCommandBuffer entityCommandbuffer)
         {
             // The logic below is similar to as if the game moved away the company,
             // except that the property is not put back on the market.
             // Logic adapted from CompanyMoveAwaySystem.CheckMoveAwayJob and CompanyMoveAwaySystem.MovingAwayJob.
 
             // Get company to move away, if any.
-            if (!TryGetCompanyAtProperty(propertyEntity, out Entity companyToMoveAway))
+            if (!CompanyUtilities.TryGetCompanyAtProperty(EntityManager, propertyEntity, propertyPrefab, out Entity companyToMoveAway))
             {
                 // This is not an error.
                 // It simply means there is no current company to move away.
-                Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(MoveAwayCompany)} company to move away=none");
-                return;
-            }
-
-            // Info logging.
-            if (EntityManager.TryGetComponent(companyToMoveAway, out PrefabRef prefabRef))
-            {
-                Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(MoveAwayCompany)} company to move away={_prefabSystem.GetPrefabName(prefabRef.m_Prefab)}");
+                return false;
             }
 
             // Add the MovingAway and Deleted components to the company.
@@ -309,6 +441,9 @@ namespace ChangeCompany
             // Let the normal game logic complete the removal of the company.
             // The Deleted component on the company will prevent the company
             // from being used for anything before it is destroyed.
+
+            // Return whether or not the company is locked.
+            return EntityManager.HasComponent<CompanyLocked>(companyToMoveAway);
         }
 
         /// <summary>
@@ -319,6 +454,7 @@ namespace ChangeCompany
             Entity propertyEntity,
             Entity propertyPrefab,
             PropertyType propertyType,
+            bool companyWasLocked,
             EntityCommandBuffer entityCommandbuffer)
         {
             // Spawn a new company using the ArchetypeData of the company prefab.
@@ -328,6 +464,7 @@ namespace ChangeCompany
 
             // IMPORTANT:  The new company entity is only temporary (i.e. not realized) until the entity command buffer is played back.
             // Therefore, operations can be performed on the new company entity only using the entity command buffer.
+            // For operations that require the realized company entity, see CheckPostChangeInitialization.
             
             // Set the prefab on the new company.
             // All new companies already have a PrefabRef that can be set.
@@ -356,6 +493,21 @@ namespace ChangeCompany
                 propertyType,
                 entityCommandbuffer);
 
+            // If previous company was locked or option is set to lock after change, lock the new company.
+            if (companyWasLocked || Mod.ModSettings.LockAfterChange)
+            {
+                entityCommandbuffer.AddComponent<CompanyLocked>(newCompanyEntity);
+            }
+
+            // Prevent property from being placed back on the market.
+            // This handles the case where a company was removed by this mod, which adds PropertyToBeOnMarket,
+            // and then the company is changed by this mod before the simulation has a chance to run
+            // and actually place the property on the market.
+            if (EntityManager.HasComponent<PropertyToBeOnMarket>(propertyEntity))
+            {
+                entityCommandbuffer.RemoveComponent<PropertyToBeOnMarket>(propertyEntity);
+            }
+
             // Some company initialization logic is performed by CompanyInitializeSystem.InitializeCompanyJob.
             // InitializeCompanyJob runs in Modification5 phase on companies with Created component.
             // Because all newly created companies have Created component and because Modification5 phase always runs,
@@ -381,16 +533,16 @@ namespace ChangeCompany
             {
                 // This should never happen.
                 PrefabSystem prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
-                Mod.log.Warn($"SpawnableBuildingData not found on selected property prefab [{propertyPrefab}] [{prefabSystem.GetPrefabName(propertyPrefab)}].");
+                Mod.log.Warn($"{nameof(ChangeCompanySystem)}.{nameof(InitializeCompany)} SpawnableBuildingData not found on selected property prefab [{propertyPrefab}] [{prefabSystem.GetPrefabName(propertyPrefab)}].");
                 return;
             }
-                
+            
             // Get BuildingPropertyData for the property prefab.
             if (!EntityManager.TryGetComponent(propertyPrefab, out BuildingPropertyData buildingPropertyData))
             {
                 // This should never happen.
                 PrefabSystem prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
-                Mod.log.Warn($"BuildingPropertyData not found on selected property prefab [{propertyPrefab}] [{prefabSystem.GetPrefabName(propertyPrefab)}].");
+                Mod.log.Warn($"{nameof(ChangeCompanySystem)}.{nameof(InitializeCompany)} BuildingPropertyData not found on selected property prefab [{propertyPrefab}] [{prefabSystem.GetPrefabName(propertyPrefab)}].");
                 return;
             }
 
@@ -423,11 +575,22 @@ namespace ChangeCompany
             }
 
             // Create a RentersUpdated event on the property.
+            CreateRentersUpdatedEvent(propertyEntity, entityCommandbuffer);
+
+            // Do post-change initialization on this property.
+            _postChangePropertyEntities.Add(propertyEntity);
+        }
+
+        /// <summary>
+        /// Create a RentersUpdated event on the property.
+        /// </summary>
+        private void CreateRentersUpdatedEvent(Entity propertyEntity, EntityCommandBuffer entityCommandbuffer)
+        {
+            // The RentersUpdated event is processed by RemovedSystem.RentersUpdateJob.
+            // RentersUpdateJob does things like remove the renter from the Renter buffer
+            // and clear the high rent notification from the building.
             Entity rentersUpdatedEventArchetypeEntity = entityCommandbuffer.CreateEntity(_rentersUpdatedEventArchetype);
             entityCommandbuffer.SetComponent(rentersUpdatedEventArchetypeEntity, new RentersUpdated(propertyEntity));
-
-            // Do post-change initialization.
-            _postChangePropertyEntity = propertyEntity;
         }
 
         /// <summary>
@@ -449,7 +612,7 @@ namespace ChangeCompany
             else
             {
                 // This should never happen.
-                Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetRentPricePerRenter)} unable to get lot size for property prefab={_prefabSystem.GetPrefabName(propertyPrefab)}");
+                Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetRentPricePerRenter)} Unable to get lot size for property prefab [{_prefabSystem.GetPrefabName(propertyPrefab)}].");
             }
 
             // Get land value.
@@ -462,7 +625,7 @@ namespace ChangeCompany
             else
             {
                 // This should never happen.
-                Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetRentPricePerRenter)} unable to get land value for property entity={propertyEntity}");
+                Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetRentPricePerRenter)} Unable to get land value for property entity [{propertyEntity}].");
             }
 
             // Get area type.
@@ -474,7 +637,7 @@ namespace ChangeCompany
             else
             {
                 // This should never happen.
-                Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetRentPricePerRenter)} unable to get area type");
+                Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetRentPricePerRenter)} Unable to get area type.");
             }
 
             // Get economy parameter data.
@@ -510,7 +673,7 @@ namespace ChangeCompany
                     else
                     {
                         // This should never happen.
-                        Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetCompanyMaxFittingWorkers)} unable to get service company data for company prefab={_prefabSystem.GetPrefabName(newCompanyPrefab)}");
+                        Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetCompanyMaxFittingWorkers)} Unable to get service company data for company prefab [{_prefabSystem.GetPrefabName(newCompanyPrefab)}].");
                         return 1;
                     }
                 }
@@ -524,14 +687,14 @@ namespace ChangeCompany
                 else
                 {
                     // This should never happen.
-                    Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetCompanyMaxFittingWorkers)} unable to get industrial process data for company prefab={_prefabSystem.GetPrefabName(newCompanyPrefab)}");
+                    Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetCompanyMaxFittingWorkers)} Unable to get industrial process data for company prefab [{_prefabSystem.GetPrefabName(newCompanyPrefab)}]");
                     return 1;
                 }
             }
             else
             {
                 // This should never happen.
-                Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetCompanyMaxFittingWorkers)} unable to get building data for property prefab={_prefabSystem.GetPrefabName(propertyPrefab)}");
+                Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetCompanyMaxFittingWorkers)} Unable to get building data for property prefab [{_prefabSystem.GetPrefabName(propertyPrefab)}]");
                 return 1;
             }
         }
@@ -541,74 +704,54 @@ namespace ChangeCompany
         /// </summary>
         private void CheckPostChangeInitialization()
         {
-            // Check if a property entity was set for post-change initialization.
-            if (_postChangePropertyEntity == Entity.Null)
+            // Check if any property entities were set for post-change initialization.
+            if (_postChangePropertyEntities.Count == 0)
             {
                 return;
             }
 
-            // Perform initializations that require the realized new company entity.
-            // At the time this mod performs the logic of PropertyProcessingSystem.PropertyRentJob in InitializeCompany,
-            // the company entity has not yet been realized due to the use of the entity command buffer.
-
-            // Get the company entity at the property, which should be there by now.
-            if (TryGetCompanyAtProperty(_postChangePropertyEntity, out Entity companyEntity))
+            // Do each property entity that was set for post-change initialization.
+            EntityCommandBuffer entityCommandbuffer = _endFrameBarrier.CreateCommandBuffer();
+            foreach (Entity propertyEntity in _postChangePropertyEntities)
             {
-                // Get the new company prefab.
-                if (EntityManager.TryGetComponent(companyEntity, out PrefabRef companyPrefabRef))
+                // Perform initializations that require the realized new company entity.
+                // At the time this mod performs the logic of PropertyProcessingSystem.PropertyRentJob in InitializeCompany,
+                // the company entity has not yet been realized due to the use of the entity command buffer.
+                // This logic executes in the next frame, by which time the new company entity should be realized.
+
+                // Get the company entity at the property.
+                if (EntityManager.TryGetComponent(propertyEntity, out PrefabRef propertyPrefabRef) &&
+                    CompanyUtilities.TryGetCompanyAtProperty(EntityManager, propertyEntity, propertyPrefabRef.m_Prefab, out Entity companyEntity))
                 {
-                    // Enqueue a BrandRented TriggerAction on the new company.
-                    // The BrandRented TriggerAction causes a Chirper message to be displayed
-                    // when certain company types are assigned to a property.
-                    NativeQueue<TriggerAction> triggerQueue = _triggerSystem.CreateActionBuffer();
-                    triggerQueue.Enqueue(new TriggerAction
+                    // Get the new company prefab.
+                    if (EntityManager.TryGetComponent(companyEntity, out PrefabRef companyPrefabRef))
                     {
-                        m_PrimaryTarget = companyEntity,
-                        m_SecondaryTarget = _postChangePropertyEntity,
-                        m_TriggerPrefab = companyPrefabRef.m_Prefab,
-                        m_TriggerType = TriggerType.BrandRented
-                    });
-                }
+                        // Enqueue a BrandRented TriggerAction on the new company.
+                        // The BrandRented TriggerAction causes a Chirper message to be displayed
+                        // when certain company types are assigned to a property.
+                        NativeQueue<TriggerAction> triggerQueue = _triggerSystem.CreateActionBuffer();
+                        triggerQueue.Enqueue(new TriggerAction
+                        {
+                            m_PrimaryTarget = companyEntity,
+                            m_SecondaryTarget = propertyEntity,
+                            m_TriggerPrefab = companyPrefabRef.m_Prefab,
+                            m_TriggerType = TriggerType.BrandRented
+                        });
+                    }
 
-                // Create a new PathTargetMoved event on the new company.
-                // Don't know what PathTargetMoved event does, but create it now.
-                if (_pathTargetMovedEventArchetype.Valid)
-                {
-                    EntityCommandBuffer entityCommandbuffer = _endFrameBarrier.CreateCommandBuffer();
-                    Entity pathTargetMovedEventArchetypeEntity = entityCommandbuffer.CreateEntity(_pathTargetMovedEventArchetype);
-                    entityCommandbuffer.SetComponent(pathTargetMovedEventArchetypeEntity,
-                        new PathTargetMoved(companyEntity, default(float3), default(float3)));
-                }
-            }
-
-            // Do not perform post-change initialization on this property again.
-            _postChangePropertyEntity = Entity.Null;
-        }
-
-        /// <summary>
-        /// Get the company, if any, at a property.
-        /// </summary>
-        public bool TryGetCompanyAtProperty(Entity propertyEntity, out Entity company)
-        {
-            // Property must have a Renter buffer.
-            if (EntityManager.TryGetBuffer(propertyEntity, true, out DynamicBuffer<Renter> renters))
-            {
-                // Find the renter that is a company (i.e. not a household in a mixed residential building).
-                for (int i = 0; i < renters.Length; i++)
-                {
-                    // Companies have CompanyData component.
-                    if (EntityManager.HasComponent<CompanyData>(renters[i].m_Renter))
+                    // Create a new PathTargetMoved event on the new company.
+                    // Don't know what PathTargetMoved event does, but create it now.
+                    if (_pathTargetMovedEventArchetype.Valid)
                     {
-                        // Return the one and only company.
-                        company = renters[i].m_Renter;
-                        return true;
+                        Entity pathTargetMovedEventArchetypeEntity = entityCommandbuffer.CreateEntity(_pathTargetMovedEventArchetype);
+                        entityCommandbuffer.SetComponent(pathTargetMovedEventArchetypeEntity,
+                            new PathTargetMoved(companyEntity, default(float3), default(float3)));
                     }
                 }
             }
 
-            // No company found.
-            company = Entity.Null;
-            return false;
+            // Do not perform post-change initialization on these properties again.
+            _postChangePropertyEntities.Clear();
         }
     }
 }

@@ -1,0 +1,44 @@
+﻿.lockCompanyDisplayRow {
+    display:                    flex;
+    flex-direction:             row;
+    white-space:                pre-wrap;
+}
+
+.lockCompanyToggleButton {
+    margin-left:                5rem;
+    padding-top:                0rem;
+    padding-left:               8rem;
+    padding-right:              8rem;
+    padding-bottom:             0rem;
+    border-top-left-radius:     4rem 4rem;
+    border-top-right-radius:    4rem 4rem;
+    border-bottom-left-radius:  4rem 4rem;
+    border-bottom-right-radius: 4rem 4rem;
+    color:                      rgba(224, 224, 224, 1);
+    background-color:           rgba(128, 128, 128, 1);
+}
+
+.lockCompanyToggleButton:hover {
+    color:                      rgba(255, 255, 255, 1);
+    background-color:           rgba(154, 154, 154, 1);
+}
+
+.lockCompanyLockUnlockButtons {
+    margin-left:                5rem;
+    padding-top:                0rem;
+    padding-left:               8rem;
+    padding-right:              8rem;
+    padding-bottom:             0rem;
+    border-top-left-radius:     4rem 4rem;
+    border-top-right-radius:    4rem 4rem;
+    border-bottom-left-radius:  4rem 4rem;
+    border-bottom-right-radius: 4rem 4rem;
+    color:                      rgba(224, 224, 224, 1);
+    background-color:           rgba(128, 128, 128, 1);
+    white-space:                pre-wrap;
+}
+
+.lockCompanyLockUnlockButtons:hover {
+    color:                      rgba(255, 255, 255, 1);
+    background-color:           rgba(154, 154, 154, 1);
+}

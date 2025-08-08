@@ -1,4 +1,4 @@
-﻿.changeNowButton {
+﻿.changeCompanyChangeThisButton {
     padding-top:                0rem;
     padding-left:               8rem;
     padding-right:              8rem;
@@ -9,18 +9,19 @@
     border-bottom-right-radius: 4rem 4rem;
     color:                      rgba(224, 224, 224, 1);
     background-color:           rgba(128, 128, 128, 1);
+    white-space:                pre-wrap;
 }
 
-.changeNowButton:hover {
+.changeCompanyChangeThisButton:hover {
     color:                      rgba(255, 255, 255, 1);
     background-color:           rgba(154, 154, 154, 1);
 }
 
-.headingRow {
+.changeCompanyHeadingRow {
     padding-top:                0rem;
     padding-bottom:             0rem;
 }
 
-.dropdownRow {
+.changeCompanyDropdownRow {
     padding-top:                0rem;
 }

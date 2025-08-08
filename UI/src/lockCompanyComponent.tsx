@@ -1,0 +1,92 @@
+﻿import { bindValue, useValue, trigger   } from "cs2/api";
+import { SelectedInfoSectionBase        } from "cs2/bindings";
+import { useLocalization                } from "cs2/l10n";
+import { FormattedParagraphsProps       } from "cs2/ui";
+
+import   styles                           from "lockCompanyComponent.module.scss";
+import   mod                              from "../mod.json";
+import { ModuleResolver                 } from "moduleResolver";
+
+// Define binding.
+const bindingCompanyLocked = bindValue<boolean>(mod.id, "CompanyLocked", false);
+
+// The component for the lock company section.
+export const LockCompanyComponent = (componentList: any): any =>
+{
+    // Add LockCompanySection to the component list.
+    // Make sure section name is unique by including the mod id.
+    componentList[mod.id + ".LockCompanySection"] = (props: SelectedInfoSectionBase) =>
+    {
+        // Get the value from binding.
+        const companyLocked: boolean = useValue(bindingCompanyLocked);
+
+        // Get the mod's translated text.
+        const { translate } = useLocalization();
+        const sectionHeading: string = translate(mod.id + ".LockCompany" ) || "Lock Company";
+        const labelLockAll:   string = translate(mod.id + ".LockAll"     ) || "Lock All";
+        const labelUnlockAll: string = translate(mod.id + ".UnlockAll"   ) || "Unlock All";
+
+        // Get the mod's translated formatted tooltip text.
+        const tooltipText: string = translate(mod.id + ".SectionTooltipLockCompany") || "Lock or unlock the company on this property.";
+        const formattedParagraphsProps: FormattedParagraphsProps = { children: tooltipText };
+        const formattedTooltip: JSX.Element = ModuleResolver.instance.FormattedParagraphs(formattedParagraphsProps);
+
+        // Get lock icon.
+        // The two image files were copied from the game's Lock.svg and OpenLock.svg files but with the color changed.
+        const lockIcon: string = "coui://" + mod.id.toLowerCase() + (companyLocked ? "/LockClosed.svg" : "/LockOpen.svg");
+
+        // Handle click on button for toggle company locked.
+        function onToggleCompanyLockedClicked()
+        {
+            // ToolButton by default makes a click, so no need to make a sound here.
+            trigger(mod.id, "ToggleCompanyLockedClicked");
+        }
+
+        // Handle click on button for lock or unlock for all companies like this.
+        function onAllCompaniesLikeCurrentClicked(lockAll: boolean)
+        {
+            trigger("audio", "playSound", ModuleResolver.instance.UISound.selectItem, 1);
+            trigger(mod.id, "AllCompaniesLikeCurrentClicked", lockAll);
+        }
+
+        // Construct the lock company section.
+        // Row 1:  Section heading and button to toggle the locked status on this company.
+        // Row 2:  Lock or unlock all existing companies like this company.
+        return (
+            <ModuleResolver.instance.InfoSection tooltip={formattedTooltip}>
+                <ModuleResolver.instance.InfoRow
+                    left={sectionHeading}
+                    uppercase={true}
+                    right=
+                    {
+                        <ModuleResolver.instance.ToolButton
+                            className={ModuleResolver.instance.ToolButtonClasses.button}
+                            src={lockIcon}
+                            onSelect={onToggleCompanyLockedClicked}
+                            selected={companyLocked}
+                            multiSelect={false}
+                            disabled={false}
+                            focusKey={ModuleResolver.instance.FOCUS_DISABLED}
+                        />
+                    }
+                    disableFocus={true}
+                />
+                <ModuleResolver.instance.InfoRow
+                    uppercase={false}
+                    right=
+                    {
+                        <div className={styles.lockCompanyDisplayRow}>
+                            <button className={styles.lockCompanyLockUnlockButtons} onClick={() => onAllCompaniesLikeCurrentClicked(true )}>{labelLockAll  }</button>
+                            <button className={styles.lockCompanyLockUnlockButtons} onClick={() => onAllCompaniesLikeCurrentClicked(false)}>{labelUnlockAll}</button>
+                        </div>
+                    }
+                    disableFocus={true}
+                    subRow={true}
+                />
+            </ModuleResolver.instance.InfoSection>
+        );
+    }
+
+    // Return the updated component list.
+    return componentList as any;
+}

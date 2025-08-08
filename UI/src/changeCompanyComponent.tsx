@@ -8,13 +8,23 @@ import { CompanySelector            } from "companySelector";
 import { ModuleResolver             } from "moduleResolver";
 import   mod                          from "../mod.json";
 
-// Resource data for a company.
-export type CompanyResourceData =
-    {
-        resourceOutput: string,
-        resourceInput1: string,
-        resourceInput2: string
-    }
+// Define special company types.
+// Matches SpecialCompanyType from C#.
+export enum SpecialCompanyType
+{
+    None,
+    Random,
+    Remove
+}
+
+// Company info.
+export type CompanyInfo =
+{
+    specialType: SpecialCompanyType,
+    resourceOutput: string,
+    resourceInput1: string,
+    resourceInput2: string
+}
 
 // The component for the change company section.
 export const ChangeCompanyComponent = (componentList: any): any =>
@@ -34,18 +44,20 @@ export const ChangeCompanyComponent = (componentList: any): any =>
     // Adapted from bindings.d.ts for the game's sections.
     interface ChangeCompanySection extends SelectedInfoSectionBase
         {
-            propertyType:         PropertyType,
-            companyResourceDatas: CompanyResourceData[]
+            propertyType:   PropertyType,
+            hasCompany:     boolean,
+            companyInfos:   CompanyInfo[]
         }
 
     // Add ChangeCompanySection to the component list.
     // Make sure section name is unique by including the mod id.
     componentList[mod.id + ".ChangeCompanySection"] = (props: ChangeCompanySection) =>
     {
-        // Get the mod's translated text for the section heading and button.
+        // Get the mod's translated text.
         const { translate } = useLocalization();
-        const sectionHeading: string = translate(mod.id + ".ChangeCompany") || "Change Company";
-        const changeNowLabel: string = translate(mod.id + ".ChangeNow"    ) || "Change Now";
+        const sectionHeading:  string = translate(mod.id + ".ChangeCompany") || "Change Company";
+        const labelChangeThis: string = translate(mod.id + ".ChangeThis"   ) || "Change This";
+        const labelChangeAll:  string = translate(mod.id + ".ChangeAll"    ) || "Change All";
 
         // Get the game's translated text for left and right headings based on property type.
         let headingSuffixLeft:  string | null = null;
@@ -61,40 +73,58 @@ export const ChangeCompanyComponent = (componentList: any): any =>
         const headingRight: string = headingSuffixRight ? translate("SelectedInfoPanel.COMPANY_" + headingSuffixRight) || headingSuffixRight : "";
 
         // Get the mod's translated formatted tooltip text based on property type.
-        const tooltipText: string = translate(mod.id + ".SectionTooltip" + PropertyType[props.propertyType]) ||
-            "Select a company from the dropdown and click Change Now.";
+        const tooltipText: string = "" + 
+            translate(mod.id + ".SectionTooltip" + PropertyType[props.propertyType]) +
+            (props.hasCompany ? "\n" + translate(mod.id + ".SectionTooltipChangeAll") : "");
         const formattedParagraphsProps: FormattedParagraphsProps = { children: tooltipText };
         const formattedTooltip: JSX.Element = ModuleResolver.instance.FormattedParagraphs(formattedParagraphsProps);
 
-        // Handle click on Change Now button
-        function onChangeNowClicked()
+        // Handle click on Change This button
+        function onChangeThisClicked()
         {
             trigger("audio", "playSound", ModuleResolver.instance.UISound.selectItem, 1);
-            trigger(mod.id, "ChangeNowClicked");
+            trigger(mod.id, "ChangeThisClicked");
+        }
+
+        // Handle click on Change All button
+        function onChangeAllClicked()
+        {
+            trigger("audio", "playSound", ModuleResolver.instance.UISound.selectItem, 1);
+            trigger(mod.id, "ChangeAllClicked");
         }
 
         // Construct the change company section.
-        // Info row 1 has section heading and Change Now button.
-        // Info row 2 has left and right headings.
-        // Info row 3 has dropdown list of companies to choose from.
+        // Row 1:  Section heading and Change This button.
+        // Row 2:  Change All button.  Displayed only if the property has a company.
+        // Row 3:  Headings for the dropdown list.
+        // Row 4:  Dropdown list of companies to choose from.
         return (
             <ModuleResolver.instance.InfoSection tooltip={formattedTooltip}>
                 <ModuleResolver.instance.InfoRow
                     left={sectionHeading}
                     uppercase={true}
-                    right={<button className={styles.changeNowButton} onClick={() => onChangeNowClicked()}>{changeNowLabel}</button>}
+                    right={<button className={styles.changeCompanyChangeThisButton} onClick={() => onChangeThisClicked()}>{labelChangeThis}</button>}
                     disableFocus={true}
                 />
+                {
+                    props.hasCompany &&
+                    <ModuleResolver.instance.InfoRow
+                        className={styles.changeCompanyHeadingRow}
+                        right={<button className={styles.changeCompanyChangeThisButton} onClick={() => onChangeAllClicked()}>{labelChangeAll}</button>}
+                        disableFocus={true}
+                        subRow={true}
+                    />
+                }
                 <ModuleResolver.instance.InfoRow
-                    className={styles.headingRow}
+                    className={styles.changeCompanyHeadingRow}
                     left={headingLeft}
                     right={headingRight}
                     disableFocus={true}
                     subRow={true}
                 />
                 <ModuleResolver.instance.InfoRow
-                    className={styles.dropdownRow}
-                    left={<CompanySelector companyResourceDatas={props.companyResourceDatas} />}
+                    className={styles.changeCompanyDropdownRow}
+                    left={<CompanySelector companyInfos={props.companyInfos} />}
                     disableFocus={true}
                     subRow={true}
                 />
