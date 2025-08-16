@@ -10,7 +10,7 @@ namespace ChangeCompany
     public class ModAssemblyInfo
     {
         public const string Name        = "ChangeCompany";
-        public const string Version     = "2.0.0";
+        public const string Version     = "2.0.1";
         public const string Title       = "Change Company";
         public const string Description = "Change the company for a commercial, industrial, or office building.";
     }

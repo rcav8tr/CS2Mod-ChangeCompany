@@ -176,7 +176,7 @@ The following mods were used in the development of this mod:
     <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/change-company.1808488/" />
 
     <!-- Version of the mod.  Copied from assembly Version. -->
-    <ModVersion Value="2.0.0" />
+    <ModVersion Value="2.0.1" />
 
     <!-- Recommended version of the base game to use the mod. -->
     <GameVersion Value="1.3.*" />
@@ -190,15 +190,7 @@ The following mods were used in the development of this mod:
 
     <!-- Change log.  Copied from ChangeLog.md file.  Supports minimal markdown subset. -->
     <ChangeLog>
-New features available:
-- Change all existing companies like the current company to the selected company.
-- Change to a random company.
-- Remove a company.
-- Lock a company to prevent it from moving away.
-- Lock or unlock all existing companies like the current company.
-- Automatically lock a company when it is changed.
-- Lock all companies in the city.
-- Remove the lock from all existing individual companies in the city.
+- Update building billboards after company is changed.
 </ChangeLog>
 
     <!-- External links.  Can be set multiple times. -->
