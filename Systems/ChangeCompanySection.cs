@@ -24,6 +24,12 @@ namespace ChangeCompany
     /// </summary>
     public partial class ChangeCompanySection : InfoSectionBase
     {
+        // Define special company indexes.
+        // The number of company infos for a property is usually at most a few tens.
+        // So using 1000 for these special company indexes should be safe.
+        private const int SpecialCompanyIndexRandom = 1000;
+        private const int SpecialCompanyIndexRemove = 1001;
+
         // Other systems.
         private ChangeCompanySystem _changeCompanySystem;
 
@@ -36,16 +42,11 @@ namespace ChangeCompany
         // The property company infos has about 1360 records in total and each record has at least two entries in its CompanyInfos.
         private Dictionary<Entity, CompanyInfos> _propertyCompanyInfos;
 
-        // Define resources manufactured by office.
-        private const Resource ResourcesManufacturedByOffice = Resource.Software | Resource.Telecom | Resource.Financial | Resource.Media;
-
         // C# to UI bindings.
         private ValueBinding<int> _bindingSelectedCompanyIndex;
 
         // Selected company index.
         private int _selectedCompanyIndex;
-        private bool _companySelectedRandom => _selectedCompanyIndex == _sectionPropertyCompanyInfos.Count;
-        private bool _companySelectedRemove => _selectedCompanyIndex == _sectionPropertyCompanyInfos.Count + 1;
 
         // Section properties.
         private PropertyType _sectionPropertyPropertyType;
@@ -147,7 +148,7 @@ namespace ChangeCompany
                     {
                         // A property prefab that allows manufactured resources is industrial or office.
                         // Identify industrial vs office property prefabs by the resource.
-                        if ((buildingPropertyData.m_AllowedManufactured & ResourcesManufacturedByOffice) == Resource.NoResource)
+                        if (!EconomyUtils.IsOfficeResource(buildingPropertyData.m_AllowedManufactured))
                         {
                             PopulatePropertyCompanyInfos(propertyPrefab, buildingPropertyData.m_AllowedManufactured, companyInfosIndustrial);
                         }
@@ -244,7 +245,7 @@ namespace ChangeCompany
                     // Identify industrial vs office company prefabs by the output resource.
                     // The only other way that was found to identify office is by the company prefab name starting with "Office".
                     Resource outputResource = componentLookupIndustrialProcessData[companyPrefabIndustrialOffice].m_Output.m_Resource;
-                    if ((outputResource & ResourcesManufacturedByOffice) == Resource.NoResource)
+                    if (!EconomyUtils.IsOfficeResource(outputResource))
                     {
                         companyPrefabsIndustrial.Add(companyPrefabIndustrialOffice);
                     }
@@ -366,11 +367,10 @@ namespace ChangeCompany
                 }
             }
             
-            // There must be at least 2 company infos to save the property prefab with its company infos.
-            // If there is only one company info for the property prefab, then
-            // there is no reason to display the Change Company section because changing the company
-            // will not result in any change in the resource sold, manufactured, or stored.
-            if (companyInfosForPropertyPrefab.Count >= 2)
+            // There must be at least 1 company info to save the property prefab with its company info(s).
+            // If there no company info for the property prefab, then
+            // there is no reason to display the Change Company section.
+            if (companyInfosForPropertyPrefab.Count >= 1)
             {
                 _propertyCompanyInfos.Add(propertyPrefab, companyInfosForPropertyPrefab);
             }
@@ -383,6 +383,7 @@ namespace ChangeCompany
             Res,
             ResMix,
             Comm,
+            Ext,
             Ind,
             Off,
             Stor,
@@ -434,7 +435,11 @@ namespace ChangeCompany
                     // Check for industrial and office.
                     else if (buildingPropertyData.m_AllowedManufactured != Resource.NoResource)
                     {
-                        if ((buildingPropertyData.m_AllowedManufactured & ResourcesManufacturedByOffice) == Resource.NoResource)
+                        if (EconomyUtils.IsExtractorResource(buildingPropertyData.m_AllowedManufactured))
+                        {
+                            Category = PropertyCategory.Ext;
+                        }
+                        else if (!EconomyUtils.IsOfficeResource(buildingPropertyData.m_AllowedManufactured))
                         {
                             Category = PropertyCategory.Ind;
                         }
@@ -501,14 +506,7 @@ namespace ChangeCompany
             {
                 if (entityManager.TryGetComponent(propertyPrefab, out ObjectData objectData))
                 {
-                    NativeArray<ComponentType> componentTypes = objectData.m_Archetype.GetComponentTypes();
-                    foreach (ComponentType componentType in componentTypes)
-                    {
-                        if (componentType.GetManagedType() == typeof(ResidentialProperty))
-                        {
-                            return true;
-                        }
-                    }
+                    return objectData.m_Archetype.GetComponentTypes().Contains(typeof(ResidentialProperty));
                 }
                 return false;
             }
@@ -749,12 +747,12 @@ namespace ChangeCompany
         {
             // Change or remove the current company.
             ChangeCompanyData changeCompanyData;
-            if (_companySelectedRandom)
+            if (_selectedCompanyIndex == SpecialCompanyIndexRandom)
             {
                 // Change to a random company.
                 changeCompanyData = BuildChangeCompanyData(RequestType.ChangeOneToRandom, Entity.Null);
             }
-            else if (_companySelectedRemove)
+            else if (_selectedCompanyIndex == SpecialCompanyIndexRemove)
             {
                 // Remove company.
                 changeCompanyData = BuildChangeCompanyData(RequestType.RemoveOne, Entity.Null);
@@ -779,12 +777,12 @@ namespace ChangeCompany
         {
             // Change or remove all companies like the current company.
             ChangeCompanyData changeCompanyData;
-            if (_companySelectedRandom)
+            if (_selectedCompanyIndex == SpecialCompanyIndexRandom)
             {
                 // Change to a random company.
                 changeCompanyData = BuildChangeCompanyData(RequestType.ChangeAllToRandom, Entity.Null);
             }
-            else if (_companySelectedRemove)
+            else if (_selectedCompanyIndex == SpecialCompanyIndexRemove)
             {
                 // Remove company.
                 changeCompanyData = BuildChangeCompanyData(RequestType.RemoveAll, Entity.Null);

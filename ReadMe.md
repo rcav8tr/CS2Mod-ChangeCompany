@@ -23,8 +23,10 @@ To change a company:
 - If the company can be changed (see **Restrictions** below), the **Change Company** section will be displayed.
 - Choose the new company in the dropdown based on the resource you want the new company to sell, produce, or store.
   The company dropdown defaults to the current company, if any.
-  To change to a random company, choose **Random** in the dropdown.
-  To remove the current company, choose **Remove** in the dropdown.
+- To change to a random company, choose **Random** in the dropdown.
+  **Random** is available only if there is more than one company to choose from.
+- To remove the current company, choose **Remove** in the dropdown.
+  **Remove** is available only if there is a current company.
 - To change the company on the current building, click **Change This**.
 - To change all existing companies that are like the current company, click **Change All**.
   If **Random** is chosen in the dropdown, each company that is changed is assigned its own random company
@@ -51,10 +53,6 @@ Upon removing a company:
 The **Change Company** feature has the following restrictions:
 - The company cannot be changed on a building that is:
   service (has no company), extractor, under construction, abandoned, condemned, deleted, destroyed, or outside connection.
-- The company cannot be changed on a building that allows only one resource to be sold, produced, or stored.
-  For example, a gas station can sell only Petrochemicals.
-  The company on a gas station cannot be changed to sell any resource other than Petrochemicals.
-  Note that most signature buildings allow only one resource.
 - The company cannot be changed to one that sells, produces, or stores a resource other than the building allows.
   For example, an ore storage building allows only Ore, Coal, or Stone to be stored.
   The company on an ore storage building cannot be changed to store any resource other than Ore, Coal, or Stone.

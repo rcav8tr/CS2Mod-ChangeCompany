@@ -714,13 +714,13 @@ namespace ChangeCompany
             EntityCommandBuffer entityCommandbuffer = _endFrameBarrier.CreateCommandBuffer();
             foreach (Entity propertyEntity in _postChangePropertyEntities)
             {
+                // Mark the property as updated so billboards are updated for the new brand.
+                entityCommandbuffer.AddComponent<Updated>(propertyEntity);
+
                 // Perform initializations that require the realized new company entity.
                 // At the time this mod performs the logic of PropertyProcessingSystem.PropertyRentJob in InitializeCompany,
                 // the company entity has not yet been realized due to the use of the entity command buffer.
                 // This logic executes in the next frame, by which time the new company entity should be realized.
-
-                // Mark the property as updated so the billboards are updated for the new brand.
-                entityCommandbuffer.AddComponent<Updated>(propertyEntity);
 
                 // Get the company entity at the property.
                 if (EntityManager.TryGetComponent(propertyEntity, out PrefabRef propertyPrefabRef) &&

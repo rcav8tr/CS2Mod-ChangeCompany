@@ -117,8 +117,11 @@ namespace ChangeCompany
         /// </summary>
         public void Write(IJsonWriter writer, bool includeRemoveCompany)
         {
+            // Include random company only if there is more than one company info.
+            bool includeRandomCompany = Count > 1;
+
             writer.PropertyName("companyInfos");
-            writer.ArrayBegin(Count + 1 + (includeRemoveCompany ? 1 : 0));
+            writer.ArrayBegin(Count + (includeRandomCompany ? 1 : 0) + (includeRemoveCompany ? 1 : 0));
 
             // Write each standard company info.
             foreach (CompanyInfo companyInfo in this)
@@ -126,10 +129,13 @@ namespace ChangeCompany
                 companyInfo.Write(writer);
             }
 
-            // Always write a company info for random company.
-            _companyInfoRandomCompany.Write(writer);
+            // Write the special company info for random company.
+            if (includeRandomCompany)
+            {
+                _companyInfoRandomCompany.Write(writer);
+            }
 
-            // If requested, write a company info for remove company.
+            // Write the special company info for remove company.
             if (includeRemoveCompany)
             {
                 _companyInfoRemoveCompany.Write(writer);

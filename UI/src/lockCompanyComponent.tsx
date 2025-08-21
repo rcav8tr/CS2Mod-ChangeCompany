@@ -49,9 +49,10 @@ export const LockCompanyComponent = (componentList: any): any =>
             trigger(mod.id, "AllCompaniesLikeCurrentClicked", lockAll);
         }
 
-        // Construct the lock company section.
-        // Row 1:  Section heading and button to toggle the locked status on this company.
-        // Row 2:  Lock or unlock all existing companies like this company.
+        // Construct the lock company section which contains 1 row:
+        //      section heading
+        //      button to toggle the locked status on this company
+        //      buttons to lock or unlock all existing companies like this company
         return (
             <ModuleResolver.instance.InfoSection tooltip={formattedTooltip}>
                 <ModuleResolver.instance.InfoRow
@@ -59,29 +60,21 @@ export const LockCompanyComponent = (componentList: any): any =>
                     uppercase={true}
                     right=
                     {
-                        <ModuleResolver.instance.ToolButton
-                            className={ModuleResolver.instance.ToolButtonClasses.button}
-                            src={lockIcon}
-                            onSelect={onToggleCompanyLockedClicked}
-                            selected={companyLocked}
-                            multiSelect={false}
-                            disabled={false}
-                            focusKey={ModuleResolver.instance.FOCUS_DISABLED}
-                        />
-                    }
-                    disableFocus={true}
-                />
-                <ModuleResolver.instance.InfoRow
-                    uppercase={false}
-                    right=
-                    {
-                        <div className={styles.lockCompanyDisplayRow}>
+                        <>
+                            <ModuleResolver.instance.ToolButton
+                                className={ModuleResolver.instance.ToolButtonClasses.button}
+                                src={lockIcon}
+                                onSelect={onToggleCompanyLockedClicked}
+                                selected={companyLocked}
+                                multiSelect={false}
+                                disabled={false}
+                                focusKey={ModuleResolver.instance.FOCUS_DISABLED}
+                            />
                             <button className={styles.lockCompanyLockUnlockButtons} onClick={() => onAllCompaniesLikeCurrentClicked(true )}>{labelLockAll  }</button>
                             <button className={styles.lockCompanyLockUnlockButtons} onClick={() => onAllCompaniesLikeCurrentClicked(false)}>{labelUnlockAll}</button>
-                        </div>
+                        </>
                     }
                     disableFocus={true}
-                    subRow={true}
                 />
             </ModuleResolver.instance.InfoSection>
         );

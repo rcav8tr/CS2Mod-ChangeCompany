@@ -1,7 +1,7 @@
 ﻿import { bindValue, useValue, trigger           } from "cs2/api";
 import { Dropdown, DropdownItem, DropdownToggle } from "cs2/ui";
 
-import { CompanyInfo                            } from "changeCompanyComponent";
+import { CompanyInfo, SpecialCompanyType        } from "changeCompanyComponent";
 import   styles                                   from "companySelector.module.scss";
 import   mod                                      from "../mod.json";
 import { ModuleResolver                         } from "moduleResolver";
@@ -22,8 +22,30 @@ export const CompanySelector = (props: CompanySelectorProps) =>
     // Get the value from binding.
     const selectedCompanyIndex: number = useValue(bindingSelectedCompanyIndex);
 
+    // Define special company indexes.
+    // Matches C#.
+    const SpecialCompanyIndexRandom: number = 1000;
+    const SpecialCompanyIndexRemove: number = 1001;
+
     // Function to join classes.
     function joinClasses(...classes: any) { return classes.join(" "); }
+
+    // Function to handle change in selected company.
+    function selectedCompanyChanged(specialType: SpecialCompanyType, companyInfoIndex: number)
+    {
+        if (specialType == SpecialCompanyType.None)
+        {
+            trigger(mod.id, "SelectedCompanyChanged", companyInfoIndex);
+        }
+        else if (specialType == SpecialCompanyType.Random)
+        {
+            trigger(mod.id, "SelectedCompanyChanged", SpecialCompanyIndexRandom);
+        }
+        else if (specialType == SpecialCompanyType.Remove)
+        {
+            trigger(mod.id, "SelectedCompanyChanged", SpecialCompanyIndexRemove);
+        }
+    }
 
     // Create a dropdown item for each company and get content of the selected item.
     let selectedCompanyDropdownItemContent: JSX.Element = <></>;
@@ -44,7 +66,10 @@ export const CompanySelector = (props: CompanySelectorProps) =>
                 const hasInput2: boolean = resourceInput2 != noResource;
 
                 // Check if this company info is for the selected company.
-                const selected: boolean = (companyInfoCounter == selectedCompanyIndex);
+                const selected: boolean = 
+                    (selectedCompanyIndex == SpecialCompanyIndexRandom && companyInfo.specialType == SpecialCompanyType.Random) ||
+                    (selectedCompanyIndex == SpecialCompanyIndexRemove && companyInfo.specialType == SpecialCompanyType.Remove) ||
+                    (selectedCompanyIndex == companyInfoCounter);
 
                 // Get company info index.
                 // Cannot use companyInfoCounter directly because its value changes for each entry.
@@ -84,7 +109,7 @@ export const CompanySelector = (props: CompanySelectorProps) =>
                         closeOnSelect={true}
                         selected={selected}
                         className={styles.changeCompanyDropdownItem}
-                        onChange={() => trigger(mod.id, "SelectedCompanyChanged", companyInfoIndex)}
+                        onChange={() => selectedCompanyChanged(companyInfo.specialType, companyInfoIndex)}
                         focusKey={ModuleResolver.instance.FOCUS_DISABLED}
                     >
                         {dropdownItemContent}

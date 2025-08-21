@@ -94,27 +94,26 @@ export const ChangeCompanyComponent = (componentList: any): any =>
         }
 
         // Construct the change company section.
-        // Row 1:  Section heading and Change This button.
-        // Row 2:  Change All button.  Displayed only if the property has a company.
-        // Row 3:  Headings for the dropdown list.
-        // Row 4:  Dropdown list of companies to choose from.
+        // Row 1:  Section heading, Change This button, and Change All button (displayed only if the property has a company).
+        // Row 2:  Headings for the dropdown list.
+        // Row 3:  Dropdown list of companies to choose from.
         return (
             <ModuleResolver.instance.InfoSection tooltip={formattedTooltip}>
                 <ModuleResolver.instance.InfoRow
                     left={sectionHeading}
                     uppercase={true}
-                    right={<button className={styles.changeCompanyChangeThisButton} onClick={() => onChangeThisClicked()}>{labelChangeThis}</button>}
+                    right=
+                    {
+                        <>
+                            <button className={styles.changeCompanyChangeThisButton} onClick={() => onChangeThisClicked()}>{labelChangeThis}</button>
+                            {
+                                props.hasCompany &&
+                                <button className={styles.changeCompanyChangeThisButton} onClick={() => onChangeAllClicked()}>{labelChangeAll}</button>
+                            }
+                        </>
+                    }
                     disableFocus={true}
                 />
-                {
-                    props.hasCompany &&
-                    <ModuleResolver.instance.InfoRow
-                        className={styles.changeCompanyHeadingRow}
-                        right={<button className={styles.changeCompanyChangeThisButton} onClick={() => onChangeAllClicked()}>{labelChangeAll}</button>}
-                        disableFocus={true}
-                        subRow={true}
-                    />
-                }
                 <ModuleResolver.instance.InfoRow
                     className={styles.changeCompanyHeadingRow}
                     left={headingLeft}

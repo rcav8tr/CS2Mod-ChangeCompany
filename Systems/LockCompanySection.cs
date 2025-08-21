@@ -168,7 +168,7 @@ namespace ChangeCompany
                 return;
             }
 
-            // If property has any of these components, then company cannot change.
+            // If property has any of these components, then section is not visible.
             if (EntityManager.HasComponent<ExtractorProperty                >(selectedEntity) ||
                 EntityManager.HasComponent<Abandoned                        >(selectedEntity) ||
                 EntityManager.HasComponent<Condemned                        >(selectedEntity) ||
