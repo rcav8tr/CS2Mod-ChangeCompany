@@ -525,29 +525,12 @@ namespace ChangeCompany
         }
 
         /// <summary>
-        /// Get the translation of the key using the current active language code.
+        /// Get the translation of the key using the current active dictionary.
         /// </summary>
         public static string Get(string translationKey)
         {
-            return Get(translationKey, GameManager.instance.localizationManager.activeLocaleId);
-        }
-
-        /// <summary>
-        /// Get the translation of the key using the specified language code.
-        /// </summary>
-        public static string Get(string translationKey, string languageCode)
-        {
-            // If language code is not supported, then use default language code.
-            // This can happen if a language in the base game is not defined in the translation file.
-            // This can happen if a mod adds a language to the game and that language is not defined in the translation file.
-            LocalizationManager localizationManager = GameManager.instance.localizationManager;
-            if (!localizationManager.SupportsLocale(languageCode))
-            {
-                languageCode = DefaultLanguageCode;
-            }
-
             // Get the translated text for the translation key.
-            if (localizationManager.activeDictionary.TryGetValue(translationKey, out string translatedText))
+            if (GameManager.instance.localizationManager.activeDictionary.TryGetValue(translationKey, out string translatedText))
             {
                 return translatedText;
             }

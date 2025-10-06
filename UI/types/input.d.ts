@@ -210,6 +210,7 @@ declare module "cs2/input" {
   	limits?: FocusLimits;
   	onRefocus?: (controller: MultiChildFocusController, lastElement: FocusController | null) => UniqueFocusKey | null;
   	onChange?: (key: UniqueFocusKey | null) => void;
+  	onFocused?: (focused: boolean) => void;
   	allowFocusExit?: boolean;
   	forceFocus?: UniqueFocusKey | null;
   	debugName?: string;
@@ -219,7 +220,7 @@ declare module "cs2/input" {
   /**
    * Automatic navigation in lists, grids and forms.
    */
-  export export const AutoNavigationScope: ({ focusKey, initialFocused, direction, activation, limits, children, onChange, onRefocus, allowFocusExit, forceFocus, debugName, allowLooping, jumpSections }: React$1.PropsWithChildren<AutoNavigationScopeProps>) => JSX.Element;
+  export export const AutoNavigationScope: ({ onRefocus, onChange, allowFocusExit, allowLooping, debugName, focusKey, forceFocus, initialFocused, ...props }: React$1.PropsWithChildren<AutoNavigationScopeProps>) => JSX.Element;
   export interface FocusBoundaryProps {
   	disabled?: boolean;
   	onFocusChange?: FocusCallback;
@@ -364,6 +365,7 @@ declare module "cs2/input" {
   	direction?: NavigationDirection;
   	activation?: FocusActivation;
   	limits?: FocusLimits;
+  	onFocused?: (focused: boolean) => void;
   	onChange: (key: UniqueFocusKey | null) => void;
   	onRefocus?: (controller: MultiChildFocusController, lastElement: FocusController | null) => UniqueFocusKey | null;
   	allowFocusExit?: boolean;
@@ -379,7 +381,7 @@ declare module "cs2/input" {
    *
    * Optionally, a `focusKey` for the component itself can be set.
    */
-  export export const NavigationScope: ({ focusKey, debugName, focused, direction, activation, limits, children, onChange, onRefocus, allowFocusExit, allowLooping, jumpSections, }: React$1.PropsWithChildren<NavigationScopeProps>) => JSX.Element;
+  export export const NavigationScope: ({ focusKey, debugName, focused, direction, activation, limits, children, onFocused, onChange, onRefocus, allowFocusExit, allowLooping, jumpSections, }: React$1.PropsWithChildren<NavigationScopeProps>) => JSX.Element;
   export type RefocusHandler = (focusController: MultiChildFocusController, lastElement: FocusController | null) => UniqueFocusKey | null;
   export export const refocusClosestKeyIfNoFocus: RefocusHandler;
   export export const refocusClosestKey: RefocusHandler;

@@ -1,14 +1,12 @@
-﻿import { bindValue, useValue, trigger   } from "cs2/api";
-import { SelectedInfoSectionBase        } from "cs2/bindings";
-import { useLocalization                } from "cs2/l10n";
-import { FormattedParagraphsProps       } from "cs2/ui";
+﻿import { useValue, trigger          } from "cs2/api";
+import { SelectedInfoSectionBase    } from "cs2/bindings";
+import { useLocalization            } from "cs2/l10n";
+import { FormattedParagraphsProps   } from "cs2/ui";
 
-import   styles                           from "lockCompanyComponent.module.scss";
-import   mod                              from "../mod.json";
-import { ModuleResolver                 } from "moduleResolver";
-
-// Define binding.
-const bindingCompanyLocked = bindValue<boolean>(mod.id, "CompanyLocked", false);
+import { bindingCompanyLocked       } from "bindings";
+import   styles                       from "lockCompanyComponent.module.scss";
+import   mod                          from "../mod.json";
+import { ModuleResolver             } from "moduleResolver";
 
 // The component for the lock company section.
 export const LockCompanyComponent = (componentList: any): any =>
@@ -17,7 +15,7 @@ export const LockCompanyComponent = (componentList: any): any =>
     // Make sure section name is unique by including the mod id.
     componentList[mod.id + ".LockCompanySection"] = (props: SelectedInfoSectionBase) =>
     {
-        // Get the value from binding.
+        // Get company locked from binding.
         const companyLocked: boolean = useValue(bindingCompanyLocked);
 
         // Get the mod's translated text.

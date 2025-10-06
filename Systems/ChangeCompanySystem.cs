@@ -14,10 +14,14 @@ using Game.Triggers;
 using Game.UI.InGame;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using UnityEngine;
 using UnityEngine.Scripting;
+using AreaType = Game.Zones.AreaType;
 
 namespace ChangeCompany
 {
@@ -44,14 +48,18 @@ namespace ChangeCompany
         private EntityQuery     _economyParameterDataQuery;
         private EntityQuery     _workProviderParameterDataQuery;
 
-        // Data from ChangeCompanySection for changing or removing a company.
-        ChangeCompanyData _changeCompanyData;
+        // Data from other systems for changing or removing a company.
+        private List<ChangeCompanyData> _changeCompanyDatas;
+        private readonly object _changeCompanyDatasLock = new();
 
         // Data for post-change initialization.
         private List<Entity> _postChangePropertyEntities;
 
         // Random seed.
         private RandomSeed _randomSeed;
+
+        // Company changed notification icon.
+        private Entity _companyChangedNotificationIcon;
 
         // Miscellaneous.
         private bool _inGame;       // Whether or not application is in a game (i.e. as opposed to main menu, editor, etc.).
@@ -118,11 +126,60 @@ namespace ChangeCompany
                     Options = EntityQueryOptions.IncludeSystems
                 });
 
-                // Initialize change company data.
-                _changeCompanyData = null;
+                // Initialize change company datas.
+                _changeCompanyDatas = new();
 
                 // Initialize post-change data.
                 _postChangePropertyEntities = new();
+
+                // Get a stream for the embedded file for the company changed notification icon.
+                // The svg file is the original.
+                // The png file was created from the svg file.
+                // The dxt5 file was created from the png file.
+                // Note that the png and dxt5 files are flipped vertically because
+                // for unknown reasons the game flips the image when displayed.
+                const string notificationIconFileName = ModAssemblyInfo.Name + ".Images.CompanyChanged.dxt5";
+                using (Stream notificationIconStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(notificationIconFileName))
+                {
+                    // Make sure stream was created.
+                    if (notificationIconStream == null)
+                    {
+                        Mod.log.Error($"Notification icon file [{notificationIconFileName}] does not exist in the assembly.");
+                        return;
+                    }
+
+                    // Read all bytes from the notification icon file.
+                    byte[] bufferAll = new byte[notificationIconStream.Length];
+                    notificationIconStream.Read(bufferAll, 0, bufferAll.Length);
+
+                    // Remove the DDS header (i.e. first 128 bytes) to get the data only.
+                    const int DDSHeaderLength = 128;
+                    byte[] bufferDataOnly = new byte[notificationIconStream.Length - DDSHeaderLength];
+                    for (int i = 0; i < bufferDataOnly.Length; i++)
+                    {
+                        bufferDataOnly[i] = bufferAll[i + DDSHeaderLength];
+                    }
+
+                    // Convert the data only to a DXT5 texture.
+                    const string NotificationIconName = "CompanyChanged";
+                    Texture2D textureDXT5 = new(128, 128, TextureFormat.DXT5, true);
+                    textureDXT5.name = NotificationIconName;
+                    textureDXT5.LoadRawTextureData(bufferDataOnly);
+                    textureDXT5.Apply();
+
+                    // Create the notification icon prefab with the DXT5 texture.
+                    NotificationIconPrefab notificationIconPrefab = ScriptableObject.CreateInstance<NotificationIconPrefab>();
+                    notificationIconPrefab.name                 = NotificationIconName;
+                    notificationIconPrefab.m_Icon               = textureDXT5;
+                    notificationIconPrefab.m_Description        = NotificationIconName;
+                    notificationIconPrefab.m_TargetDescription  = "";
+                    notificationIconPrefab.m_DisplaySize        = new(2f, 2f);
+                    notificationIconPrefab.m_PulsateAmplitude   = new(0f, 0f);
+
+                    // Add the notification icon prefab to the prefab system.
+                    _prefabSystem.AddPrefab(notificationIconPrefab);
+                    _companyChangedNotificationIcon = _prefabSystem.GetEntity(notificationIconPrefab);
+                }
 
                 // Initialize miscellaneous.
                 _inGame = false;
@@ -157,8 +214,8 @@ namespace ChangeCompany
             // If started a game, then initialize.
             if (mode == GameMode.Game)
             {
-                // Reset change company data to prevent processing any change company request from a previous game.
-                _changeCompanyData = null;
+                // Clear change company datas to prevent processing any change company request from a previous game.
+                _changeCompanyDatas.Clear();
 
                 // Reset post-change data.
                 _postChangePropertyEntities.Clear();
@@ -181,8 +238,24 @@ namespace ChangeCompany
         /// </summary>
         public void ChangeCompany(ChangeCompanyData changeCompanyData)
         {
-            // Save the data from the ChangeCompanySection.
-            _changeCompanyData = changeCompanyData;
+            // Lock thread while reading and writing request queue.
+            lock (_changeCompanyDatasLock)
+            {
+                // Check if property of this request is already in the request queue.
+                Entity property = changeCompanyData.PropertyEntity;
+                foreach (ChangeCompanyData changeCompanyDataInQueue in _changeCompanyDatas)
+                {
+                    if (changeCompanyDataInQueue.PropertyEntity == property)
+                    {
+                        // Property is already in the queue.
+                        return;
+                    }
+                }
+
+                // Property is not already in the queue.
+                // Add the request to the queue.
+                _changeCompanyDatas.Add(changeCompanyData);
+            }
         }
 
         /// <summary>
@@ -206,66 +279,77 @@ namespace ChangeCompany
             // Check if post-change initialization should be performed from the previous frame.
             CheckPostChangeInitialization();
 
-            // Check if there is a change company request.
-            if (_changeCompanyData == null)
+            // Lock thread while reading and writing request queue.
+            List<ChangeCompanyData> changeCompanyDatas = new();
+            lock (_changeCompanyDatasLock)
+            {
+                // Quickly copy requests locally to spend as little time as possible with the thread locked.
+                foreach (ChangeCompanyData changeCompanyData in _changeCompanyDatas)
+                {
+                    changeCompanyDatas.Add(changeCompanyData);
+                }
+                _changeCompanyDatas.Clear();
+            }
+
+            // Check if there are any change company requests.
+            if (changeCompanyDatas.Count == 0)
             {
                 // This is not an error.
-                // There is simply no pending change company request.
+                // There are simply no pending change company requests.
                 return;
             }
 
-            try
+            // Process each change company request from the local copy.
+            foreach (ChangeCompanyData changeCompanyData in changeCompanyDatas)
             {
-                // Process the change company request.
-                switch (_changeCompanyData.requestType)
+                try
                 {
-                    case RequestType.ChangeOneToSpecified:
-                        ChangeOneCompanyToSpecified(
-                            _changeCompanyData.newCompanyPrefab,
-                            _changeCompanyData.propertyEntity,
-                            _changeCompanyData.propertyPrefab,
-                            _changeCompanyData.propertyType);
-                        break;
+                    // Process the change company request according to its request type.
+                    switch (changeCompanyData.RequestType)
+                    {
+                        case RequestType.ChangeOneToSpecified:
+                            ChangeOneCompanyToSpecified(
+                                changeCompanyData.NewCompanyPrefab,
+                                changeCompanyData.PropertyEntity,
+                                changeCompanyData.PropertyPrefab,
+                                changeCompanyData.PropertyType);
+                            break;
 
-                    case RequestType.ChangeOneToRandom:
-                        ChangeOneCompanyToRandom(
-                            _changeCompanyData.companyInfos,
-                            _changeCompanyData.propertyEntity,
-                            _changeCompanyData.propertyPrefab,
-                            _changeCompanyData.propertyType);
-                        break;
+                        case RequestType.ChangeOneToRandom:
+                            ChangeOneCompanyToRandom(
+                                changeCompanyData.CompanyInfos,
+                                changeCompanyData.PropertyEntity,
+                                changeCompanyData.PropertyPrefab,
+                                changeCompanyData.PropertyType);
+                            break;
 
-                    case RequestType.RemoveOne:
-                        RemoveOneCompany(
-                            _changeCompanyData.propertyEntity,
-                            _changeCompanyData.propertyPrefab);
-                        break;
+                        case RequestType.RemoveOne:
+                            RemoveOneCompany(
+                                changeCompanyData.PropertyEntity,
+                                changeCompanyData.PropertyPrefab);
+                            break;
 
-                    case RequestType.ChangeAllToSpecified:
-                    case RequestType.ChangeAllToRandom:
-                    case RequestType.RemoveAll:
-                        ChangeRemoveAllCompanies(
-                            _changeCompanyData.requestType,
-                            _changeCompanyData.newCompanyPrefab,
-                            _changeCompanyData.companyInfos,
-                            _changeCompanyData.propertyEntity,
-                            _changeCompanyData.propertyPrefab,
-                            _changeCompanyData.propertyType);
-                        break;
+                        case RequestType.ChangeAllToSpecified:
+                        case RequestType.ChangeAllToRandom:
+                        case RequestType.RemoveAll:
+                            ChangeRemoveAllCompanies(
+                                changeCompanyData.RequestType,
+                                changeCompanyData.NewCompanyPrefab,
+                                changeCompanyData.CompanyInfos,
+                                changeCompanyData.PropertyEntity,
+                                changeCompanyData.PropertyPrefab,
+                                changeCompanyData.PropertyType);
+                            break;
+                    }
                 }
+                catch (Exception ex)
+                {
+                    Mod.log.Error(ex);
+                }
+            }
 
-                // Update selected info in UI.
-                _selectedInfoUISystem.RequestUpdate();
-            }
-            catch (Exception ex)
-            {
-                Mod.log.Error(ex);
-            }
-            finally
-            {
-                // Prevent processing this change company request again.
-                _changeCompanyData = null;
-            }
+            // Update selected info in UI.
+            _selectedInfoUISystem.RequestUpdate();
         }
 
         /// <summary>
@@ -281,6 +365,9 @@ namespace ChangeCompany
             
             // Create a new company and assign it to the property.
             CreateCompany(newCompanyPrefab, propertyEntity, propertyPrefab, propertyType, companyWasLocked, entityCommandbuffer);
+
+            // Display company changed notification icon on the property.
+            DisplayCompanyChangedNotificationIcon(propertyEntity);
         }
 
         /// <summary>
@@ -329,6 +416,9 @@ namespace ChangeCompany
 
             // Create a RentersUpdated event on the property.
             CreateRentersUpdatedEvent(propertyEntity, entityCommandbuffer);
+
+            // Display company changed notification icon on the property.
+            DisplayCompanyChangedNotificationIcon(propertyEntity);
         }
 
         /// <summary>
@@ -416,7 +506,7 @@ namespace ChangeCompany
             }
 
             // Add the MovingAway and Deleted components to the company.
-            ComponentTypeSet componentsMovingAwayDeleted = new ComponentTypeSet(
+            ComponentTypeSet componentsMovingAwayDeleted = new(
                 ComponentType.ReadOnly<MovingAway>(),
                 ComponentType.ReadOnly<Deleted   >());
             entityCommandbuffer.AddComponent(companyToMoveAway, in componentsMovingAwayDeleted);
@@ -532,8 +622,7 @@ namespace ChangeCompany
             if (!EntityManager.TryGetComponent(propertyPrefab, out SpawnableBuildingData spawnableBuildingData))
             {
                 // This should never happen.
-                PrefabSystem prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
-                Mod.log.Warn($"{nameof(ChangeCompanySystem)}.{nameof(InitializeCompany)} SpawnableBuildingData not found on selected property prefab [{propertyPrefab}] [{prefabSystem.GetPrefabName(propertyPrefab)}].");
+                Mod.log.Warn($"{nameof(ChangeCompanySystem)}.{nameof(InitializeCompany)} SpawnableBuildingData not found on selected property prefab [{propertyPrefab}] [{_prefabSystem.GetPrefabName(propertyPrefab)}].");
                 return;
             }
             
@@ -541,8 +630,7 @@ namespace ChangeCompany
             if (!EntityManager.TryGetComponent(propertyPrefab, out BuildingPropertyData buildingPropertyData))
             {
                 // This should never happen.
-                PrefabSystem prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
-                Mod.log.Warn($"{nameof(ChangeCompanySystem)}.{nameof(InitializeCompany)} BuildingPropertyData not found on selected property prefab [{propertyPrefab}] [{prefabSystem.GetPrefabName(propertyPrefab)}].");
+                Mod.log.Warn($"{nameof(ChangeCompanySystem)}.{nameof(InitializeCompany)} BuildingPropertyData not found on selected property prefab [{propertyPrefab}] [{_prefabSystem.GetPrefabName(propertyPrefab)}].");
                 return;
             }
 
@@ -629,7 +717,7 @@ namespace ChangeCompany
             }
 
             // Get area type.
-            Game.Zones.AreaType areaType = Game.Zones.AreaType.None;
+            AreaType areaType = AreaType.None;
             if (EntityManager.TryGetComponent(spawnableBuildingData.m_ZonePrefab, out ZoneData zoneData))
             {
                 areaType = zoneData.m_AreaType;
@@ -697,6 +785,20 @@ namespace ChangeCompany
                 Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetCompanyMaxFittingWorkers)} Unable to get building data for property prefab [{_prefabSystem.GetPrefabName(propertyPrefab)}]");
                 return 1;
             }
+        }
+
+        /// <summary>
+        /// Display the company changed notification icon on the property.
+        /// </summary>
+        private void DisplayCompanyChangedNotificationIcon(Entity propertyEntity)
+        {
+            // Logic adapted from Game.Simulation.BuildingUpkeepSystem.LevelupJob
+            IconCommandBuffer iconCommandBuffer = _iconCommandSystem.CreateCommandBuffer();
+            iconCommandBuffer.Add(
+                propertyEntity,
+                _companyChangedNotificationIcon,
+                IconPriority.Info,
+                IconClusterLayer.Transaction);
         }
 
         /// <summary>

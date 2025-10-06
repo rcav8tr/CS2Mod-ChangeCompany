@@ -16,6 +16,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine.Scripting;
+using OutsideConnection = Game.Objects.OutsideConnection;
 
 namespace ChangeCompany
 {
@@ -51,7 +52,10 @@ namespace ChangeCompany
         // Section properties.
         private PropertyType _sectionPropertyPropertyType;
         private bool         _sectionPropertyHasCompany;
-        private CompanyInfos _sectionPropertyCompanyInfos = new CompanyInfos();
+        private CompanyInfos _sectionPropertyCompanyInfos = new();
+
+        // Company infos for industrial and office resources.
+        private Dictionary<Resource, CompanyInfos> _companyInfosIndustrialOfficResource;
 
         // For all sections in the base game, the group is the class name, so do the same for this section.
         protected override string group => nameof(ChangeCompanySection);
@@ -188,6 +192,10 @@ namespace ChangeCompany
                 //    ResourceData resourceData = componentLookupResourceData[resourcePrefabs[iterator.resource]];
                 //    Mod.log.Info($"{iterator.resource}\t{resourceData.m_IsProduceable}\t{resourceData.m_IsTradable}\t{resourceData.m_IsMaterial}\t{resourceData.m_IsLeisure}\t{resourceData.m_Price.x}\t{resourceData.m_Price.y}");
                 //}
+                //ResourceData resourceData1 = componentLookupResourceData[resourcePrefabs[Resource.NoResource]];
+                //Mod.log.Info($"{Resource.NoResource}\t{resourceData1.m_IsProduceable}\t{resourceData1.m_IsTradable}\t{resourceData1.m_IsMaterial}\t{resourceData1.m_IsLeisure}\t{resourceData1.m_Price.x}\t{resourceData1.m_Price.y}");
+                //resourceData1 = componentLookupResourceData[resourcePrefabs[Resource.Last]];
+                //Mod.log.Info($"{Resource.Last}\t{resourceData1.m_IsProduceable}\t{resourceData1.m_IsTradable}\t{resourceData1.m_IsMaterial}\t{resourceData1.m_IsLeisure}\t{resourceData1.m_Price.x}\t{resourceData1.m_Price.y}");
 #endif
             }
             catch (Exception ex)
@@ -238,8 +246,8 @@ namespace ChangeCompany
                 List<Entity> companyPrefabsIndustrialOffice = companyPrefabQueryIndustrialOffice.ToEntityArray(Allocator.Temp).ToList();
 
                 // Determine which company prefabs are industrial vs office.
-                List<Entity> companyPrefabsIndustrial = new List<Entity>();
-                List<Entity> companyPrefabsOffice     = new List<Entity>();
+                List<Entity> companyPrefabsIndustrial = new();
+                List<Entity> companyPrefabsOffice     = new();
                 foreach (Entity companyPrefabIndustrialOffice in companyPrefabsIndustrialOffice)
                 {
                     // Identify industrial vs office company prefabs by the output resource.
@@ -264,16 +272,36 @@ namespace ChangeCompany
                 List<Entity> companyPrefabsStorage = companyPrefabQueryStorage.ToEntityArray(Allocator.Temp).ToList();
 
                 // Create new company infos from the company prefabs.
-                companyInfosCommercial = new CompanyInfos(companyPrefabsCommercial, componentLookupIndustrialProcessData);
-                companyInfosIndustrial = new CompanyInfos(companyPrefabsIndustrial, componentLookupIndustrialProcessData);
-                companyInfosOffice     = new CompanyInfos(companyPrefabsOffice,     componentLookupIndustrialProcessData);
-                companyInfosStorage    = new CompanyInfos(companyPrefabsStorage,    componentLookupIndustrialProcessData);
+                companyInfosCommercial = new(companyPrefabsCommercial, componentLookupIndustrialProcessData);
+                companyInfosIndustrial = new(companyPrefabsIndustrial, componentLookupIndustrialProcessData);
+                companyInfosOffice     = new(companyPrefabsOffice,     componentLookupIndustrialProcessData);
+                companyInfosStorage    = new(companyPrefabsStorage,    componentLookupIndustrialProcessData);
 
                 // Info logging.
                 Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(GetCompanyInfos)} Company infos for Commercial = {companyInfosCommercial.Count,3}");
                 Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(GetCompanyInfos)} Company infos for Industrial = {companyInfosIndustrial.Count,3}");
                 Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(GetCompanyInfos)} Company infos for Office     = {companyInfosOffice    .Count,3}");
                 Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(GetCompanyInfos)} Company infos for Storage    = {companyInfosStorage   .Count,3}");
+
+                // Get the industrial and office company infos by output resource.
+                // Some output resources have more than one company info.
+                _companyInfosIndustrialOfficResource = new();
+                foreach (CompanyInfo companyInfo in companyInfosIndustrial)
+                {
+                    if (!_companyInfosIndustrialOfficResource.ContainsKey(companyInfo.ResourceOutput))
+                    {
+                        _companyInfosIndustrialOfficResource.Add(companyInfo.ResourceOutput, new CompanyInfos());
+                    }
+                    _companyInfosIndustrialOfficResource[companyInfo.ResourceOutput].Add(companyInfo);
+                }
+                foreach (CompanyInfo companyInfo in companyInfosOffice)
+                {
+                    if (!_companyInfosIndustrialOfficResource.ContainsKey(companyInfo.ResourceOutput))
+                    {
+                        _companyInfosIndustrialOfficResource.Add(companyInfo.ResourceOutput, new CompanyInfos());
+                    }
+                    _companyInfosIndustrialOfficResource[companyInfo.ResourceOutput].Add(companyInfo);
+                }
 
 #if DEBUG
                 // Dump company infos.
@@ -291,6 +319,18 @@ namespace ChangeCompany
             {
                 Mod.log.Error(ex);
             }
+        }
+
+        /// <summary>
+        /// Get company infos for an industrial or office resource.
+        /// </summary>
+        public CompanyInfos GetCompanyInfosForResource(Resource resource)
+        {
+            if (_companyInfosIndustrialOfficResource.ContainsKey(resource))
+            {
+                return _companyInfosIndustrialOfficResource[resource];
+            }
+            return new CompanyInfos();
         }
 
 #if DEBUG
@@ -323,7 +363,7 @@ namespace ChangeCompany
                 ArchetypeData archetypeData = EntityManager.GetComponentData<ArchetypeData>(companyPrefab);
 
                 // Construct and log a sorted list of the component types in the archetype.
-                List<string> components = new List<string>();
+                List<string> components = new();
                 foreach (ComponentType componentType in archetypeData.m_Archetype.GetComponentTypes())
                 {
                     components.Add(componentType.GetManagedType().ToString());
@@ -344,7 +384,7 @@ namespace ChangeCompany
         {
             // From the allowed resources flags, create a list of resources that this property prefab allows.
             // Add only resources from the resource order.
-            List<Resource> resourcesAllowedByPropertyPrefab = new List<Resource>();
+            List<Resource> resourcesAllowedByPropertyPrefab = new();
             foreach (Resource resourceToCheck in CompanyInfos.ResourceOrder)
             {
                 if ((allowedResourcesFlags & resourceToCheck) != 0)
@@ -516,7 +556,7 @@ namespace ChangeCompany
             /// </summary>
             private List<Resource> GetResourcesAllowed(Resource allowedResourcesFlags)
             {
-                List<Resource> resourcesAllowed = new List<Resource>();
+                List<Resource> resourcesAllowed = new();
                 foreach (Resource resourceToCheck in CompanyInfos.ResourceOrder)
                 {
                     if ((allowedResourcesFlags & resourceToCheck) != 0)
@@ -648,14 +688,14 @@ namespace ChangeCompany
             }
             
             // If property has any of these components, then company cannot change.
-            if (EntityManager.HasComponent<ExtractorProperty                >(propertyEntity) ||
-                EntityManager.HasComponent<Abandoned                        >(propertyEntity) ||
-                EntityManager.HasComponent<Condemned                        >(propertyEntity) ||
-                EntityManager.HasComponent<Deleted                          >(propertyEntity) ||
-                EntityManager.HasComponent<Temp                             >(propertyEntity) ||
-                EntityManager.HasComponent<Destroyed                        >(propertyEntity) ||
-                EntityManager.HasComponent<Game.Objects.OutsideConnection   >(propertyEntity) ||
-                EntityManager.HasComponent<UnderConstruction                >(propertyEntity))
+            if (EntityManager.HasComponent<ExtractorProperty    >(propertyEntity) ||
+                EntityManager.HasComponent<Abandoned            >(propertyEntity) ||
+                EntityManager.HasComponent<Condemned            >(propertyEntity) ||
+                EntityManager.HasComponent<Deleted              >(propertyEntity) ||
+                EntityManager.HasComponent<Temp                 >(propertyEntity) ||
+                EntityManager.HasComponent<Destroyed            >(propertyEntity) ||
+                EntityManager.HasComponent<OutsideConnection    >(propertyEntity) ||
+                EntityManager.HasComponent<UnderConstruction    >(propertyEntity))
             {
                 return false;
             }
@@ -807,19 +847,19 @@ namespace ChangeCompany
         {
             return new ChangeCompanyData
             {
-                requestType      = requestType,
-                newCompanyPrefab = newCompanyPrefab,
-                companyInfos     = _sectionPropertyCompanyInfos,
-                propertyEntity   = selectedEntity,
-                propertyPrefab   = selectedPrefab,
-                propertyType     = _sectionPropertyPropertyType
+                RequestType      = requestType,
+                NewCompanyPrefab = newCompanyPrefab,
+                CompanyInfos     = _sectionPropertyCompanyInfos,
+                PropertyEntity   = selectedEntity,
+                PropertyPrefab   = selectedPrefab,
+                PropertyType     = _sectionPropertyPropertyType
             };
         }
 
         /// <summary>
         /// Get the property type of the property.
         /// </summary>
-        private PropertyType GetPropertyType(Entity propertyEntity)
+        public PropertyType GetPropertyType(Entity propertyEntity)
         {
             // For mixed residential:
             //      The base game and current DLCs/CCPs provide only residential mixed with commercial.

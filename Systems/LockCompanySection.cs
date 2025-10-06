@@ -18,6 +18,9 @@ using System.Reflection;
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine.Scripting;
+using ExtractorCompany  = Game.Companies.ExtractorCompany;
+using OutsideConnection = Game.Objects.OutsideConnection;
+using ProcessingCompany = Game.Companies.ProcessingCompany;
 
 namespace ChangeCompany
 {
@@ -78,16 +81,16 @@ namespace ChangeCompany
                 //      Therefore, the RequireAnyForUpdate prevents OnUpdate from running only on a city with no companies.
                 //      Furthermore, this new query is the one that OnUpdate actually uses to check for companies to move away.
                 companyQueryField.SetValue(_companyMoveAwaySystem, GetEntityQuery(
-                    ComponentType.ReadOnly<Game.Companies.ProcessingCompany >(),
-                    ComponentType.ReadOnly<PropertyRenter                   >(),
-                    ComponentType.ReadOnly<WorkProvider                     >(),
-                    ComponentType.ReadOnly<Resources                        >(),
-                    ComponentType.ReadOnly<PrefabRef                        >(),
-                    ComponentType.Exclude<Game.Companies.ExtractorCompany   >(),
-                    ComponentType.Exclude<MovingAway                        >(),
-                    ComponentType.Exclude<Deleted                           >(),
-                    ComponentType.Exclude<Temp                              >(),
-                    ComponentType.Exclude<CompanyLocked                     >() ));
+                    ComponentType.ReadOnly<ProcessingCompany    >(),
+                    ComponentType.ReadOnly<PropertyRenter       >(),
+                    ComponentType.ReadOnly<WorkProvider         >(),
+                    ComponentType.ReadOnly<Resources            >(),
+                    ComponentType.ReadOnly<PrefabRef            >(),
+                    ComponentType.Exclude<ExtractorCompany      >(),
+                    ComponentType.Exclude<MovingAway            >(),
+                    ComponentType.Exclude<Deleted               >(),
+                    ComponentType.Exclude<Temp                  >(),
+                    ComponentType.Exclude<CompanyLocked         >() ));
 
                 // Add bindings for C# to UI.
                 // Need to use a binding for company locked status instead of OnWriteProperties because
@@ -101,23 +104,23 @@ namespace ChangeCompany
 
                 // Query to get companies that are not currently locked.
                 _companyQueryNotLocked = GetEntityQuery(
-                    ComponentType.ReadOnly<CompanyData                      >(),
-                    ComponentType.ReadOnly<PrefabRef                        >(),
-                    ComponentType.ReadOnly<PropertyRenter                   >(),
-                    ComponentType.Exclude<CompanyLocked                     >(),
-                    ComponentType.Exclude<Deleted                           >(),
-                    ComponentType.Exclude<Temp                              >(),
-                    ComponentType.Exclude<Game.Companies.ExtractorCompany   >());
+                    ComponentType.ReadOnly<CompanyData      >(),
+                    ComponentType.ReadOnly<PrefabRef        >(),
+                    ComponentType.ReadOnly<PropertyRenter   >(),
+                    ComponentType.Exclude<CompanyLocked     >(),
+                    ComponentType.Exclude<Deleted           >(),
+                    ComponentType.Exclude<Temp              >(),
+                    ComponentType.Exclude<ExtractorCompany  >());
 
                 // Query to get companies that are currently locked.
                 _companyQueryLocked = GetEntityQuery(
-                    ComponentType.ReadOnly<CompanyData                      >(),
-                    ComponentType.ReadOnly<PrefabRef                        >(),
-                    ComponentType.ReadOnly<PropertyRenter                   >(),
-                    ComponentType.ReadOnly<CompanyLocked                    >(),
-                    ComponentType.Exclude<Deleted                           >(),
-                    ComponentType.Exclude<Temp                              >(),
-                    ComponentType.Exclude<Game.Companies.ExtractorCompany   >());
+                    ComponentType.ReadOnly<CompanyData      >(),
+                    ComponentType.ReadOnly<PrefabRef        >(),
+                    ComponentType.ReadOnly<PropertyRenter   >(),
+                    ComponentType.ReadOnly<CompanyLocked    >(),
+                    ComponentType.Exclude<Deleted           >(),
+                    ComponentType.Exclude<Temp              >(),
+                    ComponentType.Exclude<ExtractorCompany  >());
             }
             catch (Exception ex)
             {
@@ -169,14 +172,14 @@ namespace ChangeCompany
             }
 
             // If property has any of these components, then section is not visible.
-            if (EntityManager.HasComponent<ExtractorProperty                >(selectedEntity) ||
-                EntityManager.HasComponent<Abandoned                        >(selectedEntity) ||
-                EntityManager.HasComponent<Condemned                        >(selectedEntity) ||
-                EntityManager.HasComponent<Deleted                          >(selectedEntity) ||
-                EntityManager.HasComponent<Temp                             >(selectedEntity) ||
-                EntityManager.HasComponent<Destroyed                        >(selectedEntity) ||
-                EntityManager.HasComponent<Game.Objects.OutsideConnection   >(selectedEntity) ||
-                EntityManager.HasComponent<UnderConstruction                >(selectedEntity))
+            if (EntityManager.HasComponent<ExtractorProperty    >(selectedEntity) ||
+                EntityManager.HasComponent<Abandoned            >(selectedEntity) ||
+                EntityManager.HasComponent<Condemned            >(selectedEntity) ||
+                EntityManager.HasComponent<Deleted              >(selectedEntity) ||
+                EntityManager.HasComponent<Temp                 >(selectedEntity) ||
+                EntityManager.HasComponent<Destroyed            >(selectedEntity) ||
+                EntityManager.HasComponent<OutsideConnection    >(selectedEntity) ||
+                EntityManager.HasComponent<UnderConstruction    >(selectedEntity))
             {
                 visible = false;
                 return;
@@ -279,26 +282,23 @@ namespace ChangeCompany
                 EntityCommandBuffer entityCommandbuffer = _endFrameBarrier.CreateCommandBuffer();
                 foreach (Entity companyToCheckEntity in companyQuery.ToEntityArray(Allocator.Temp))
                 {
-                    // Get the prefab ref for the company to check.
-                    if (EntityManager.TryGetComponent(companyToCheckEntity, out PrefabRef companyToCheckPrefabRef))
+                    // Determine if the company to check prefab is the same as the selected company prefab
+                    // (i.e. "like this" or like the selected company).
+                    if (EntityManager.TryGetComponent(companyToCheckEntity, out PrefabRef companyToCheckPrefabRef) &&
+                        companyToCheckPrefabRef.m_Prefab == selectedCompanyPrefab)
                     {
-                        // Determine if the company to check prefab is the same as the selected company prefab
-                        // (i.e. "like this" or like the selected company).
-                        if (companyToCheckPrefabRef.m_Prefab == selectedCompanyPrefab)
+                        // Property must valid on PropertyRenter of company.
+                        if (EntityManager.TryGetComponent(companyToCheckEntity, out PropertyRenter propertyRenter) &&
+                            propertyRenter.m_Property != Entity.Null)
                         {
-                            // Property must valid on PropertyRenter of company.
-                            if (EntityManager.TryGetComponent(companyToCheckEntity, out PropertyRenter propertyRenter) &&
-                                propertyRenter.m_Property != Entity.Null)
+                            // Add or remove the company locked component on the company to check.
+                            if (lockAll)
                             {
-                                // Add or remove the company locked component on the company to check.
-                                if (lockAll)
-                                {
-                                    entityCommandbuffer.AddComponent<CompanyLocked>(companyToCheckEntity);
-                                }
-                                else
-                                {
-                                    entityCommandbuffer.RemoveComponent<CompanyLocked>(companyToCheckEntity);
-                                }
+                                entityCommandbuffer.AddComponent<CompanyLocked>(companyToCheckEntity);
+                            }
+                            else
+                            {
+                                entityCommandbuffer.RemoveComponent<CompanyLocked>(companyToCheckEntity);
                             }
                         }
                     }

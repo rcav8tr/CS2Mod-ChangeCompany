@@ -1,2 +1,2 @@
-﻿- Permit change company on buildings that allow only one resource.
-- Make the Change Company and Lock Company sections more compact when space allows.
+﻿- Add new **Production Balance** feature which will automatically balance industrial and office production
+  according to resource surplus and deficit.

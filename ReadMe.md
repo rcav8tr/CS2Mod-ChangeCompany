@@ -1,10 +1,10 @@
-﻿# Change Company
-Change the company for a commercial, industrial, or office building.
-- Mixed residential buildings are included.
-- Industrial includes production and storage buildings.
+﻿# Main Features
+The **Change Company** mod includes 3 main features:
+- **Change Company**:  Allows you to change the company for a mixed residential, commercial, industrial, storage, or office building.
+- **Production Balance**:  Automatically balances production of industrial and office resources.
+- **Lock Company**:  Allows you to lock companies to prevent them from moving away.
 
-# Lock Company
-Lock a company to prevent it from moving away.
+These features are described in the following sections.
 
  
 # Change Company - Description
@@ -19,7 +19,7 @@ The **Change Company** feature is intended to be used together with my **Resourc
 which locates buildings where resources are required, produced, sold, and stored.
 
 To change a company:
-- Select a building to display its information.
+- Select a mixed residential, commercial, industrial, storage, or office building to display its information.
 - If the company can be changed (see **Restrictions** below), the **Change Company** section will be displayed.
 - Choose the new company in the dropdown based on the resource you want the new company to sell, produce, or store.
   The company dropdown defaults to the current company, if any.
@@ -63,6 +63,67 @@ that allows the desired resource to be sold, produced, or stored or that is the 
 Then use **Change Company** to change the company in that building.
 
 
+# Production Balance - Description
+The objective of **Production Balance** is to correct the situation where the city produces surpluses of some resources
+while at the same time has deficits of other resources which have to be imported.
+
+When enabled (see **Options** below), production of industrial and office resources
+are automatically balanced according to the surplus or deficit of the resources.
+See **Retrictions** below.
+
+On the **Check Interval** you choose (see **Options** below), the following is automatically performed
+once for industrial resources and once for office resources:
+- Determine the resource that has the highest surplus.
+- Determine the resource that has the highest deficit.
+- Among the companies that produce the resource with the highest surplus, the company with the lowest total worth is chosen.
+- Automatically change the chosen company to a company that produces the highest deficit.
+
+Achieveing balance may take several game minutes to a few game months depending on factors like:
+- **Check Interval**.  A higher interval takes longer.
+- Number of companies.  More companies takes longer.
+- How far the resources are currently out of balance.  More out of balance takes longer.
+Industrial will usually take longer to balance than office.
+ 
+During and after **Production Balance**, you may need to adjust the amount of extraction, commercial, storage, and other items in your city.
+
+If the option is set to **Lock After Change** (see **Options** below),
+the company will be individually locked for a change due to **Production Balance**.
+Locked companies (individually or entire city) can be changed by **Production Balance**.
+
+### Production Balance - Restrictions
+The **Production Balance** feature has the following restrictions and rules:
+- Production balance is performed only while the simulation is running.
+- Production balance is performed only on companies that can be manually changed by the **Change Company** feature.
+- Production balance is performed only if there are a minimum of 50 industrial companies or 15 office companies.
+  These values can be adjusted in **Options** and viewed in **Statistics** (see below).
+- The standard deviation of the resource surpluses is computed as a percent of the average company production.
+  Production balance is performed only if the standard deviation is a minimum of 80%.
+  This value can be adjusted in **Options** and viewed in **Statistics** (see below).
+- Production balance changes a company only if the company' production is a maximum of 50% of the city's production of the surplus resource.
+  This value can be adjusted in **Options** (see below).
+
+Some of these restrictions and rules are to prevent excessive company changes when the production gets close to balanced and in small cities.
+
+### Production Balance - Statistics
+The current statistics computed by production balance are displayed on the **Production Balance Statistics** screen.
+The screen can be displayed by clicking on the activaton button in the upper left
+or by pressing the keyboard shortcut which by default is Shift+Ctrl+B (see **Options** below).
+The screen can be dragged and the new position will be remembered between games.
+You can use the statistics to help when deciding if or how to adjust the production balance options.
+
+The following statistics are displayed for industrial and for office:
+- Companies: number of companies.
+- Minimum Companies: minimum number of companies to do production balance (from **Options**).
+- Standard Deviation: standard deviation of resource surpluses as a percent of average production.
+- Minimum Standard Deviation: minimum standard deviation percent to do production balance (from **Options**).
+- Last Change Date Time: date and time of last company change.
+- Old Resource: the last company to change produced this resource.
+- New Resource: the last company to change now produces this resource.
+- Next Check Date Time: date and time of the next production balance check.
+Companies and Standard Deviation require the simulation to run a bit for the values to be calculated and displayed.
+The last change statistics are only since the game was loaded and are displayed only after a production balance is successfully performed.
+
+
 # Lock Company - Description
 Locking a company prevents the game from the moving the company away.
 The game's normal logic may move a company away because of bankruptcy or random chance.
@@ -72,7 +133,7 @@ You may want to lock a company after changing it (see **Lock After Change** in *
 To lock a company on its building:
 - Select a building to display its information.
 - If the company can be locked (see **Restrictions** below), the **Lock Company** section will be displayed.
-- The locked status of the current company is shown by the lock indicator.
+- The locked status of the current company is shown by the **lock indicator**.
   To toggle the current company between locked and unlocked, click the **lock indicator**.
 - To lock or unlock all existing individual companies that are like the current company, click **Lock All** or **Unlock All**.
   The current company will be affected.
@@ -90,6 +151,57 @@ The **Lock Company** feature has the following restrictions:
 
 # Options
 The mod options are described below.
+
+## Production Balance
+The options for **Production Balance** are described below.
+
+### Production Balance Enabled - Industrial and Office
+Production balance is enabled or disabled.
+- Default is disabled.
+
+### Check Interval - Industrial and Office
+Game minutes between production balance checks.
+- Default is 10.
+- Each production balance check will change only one company.
+- A lower interval will balance faster but may be a greater shock to the city.
+- A higher interval will balance more gradually and may be useful to maintain balance without excessive company changes.
+
+### Minimum Companies - Industrial and Office
+Minimum number of companies to allow production balance.
+- Default is 50 for industrial and 15 for office.
+- A lower value will allow balancing on smaller cities, but possibly with excessive company changes.
+- A higher value will help prevent excessive company changes, especially on smaller cities.
+
+### Minimum Standard Deviation - Industrial and Office
+Minimum standard deviation of resource surpluses as a percent of average company production to allow production balance.
+- Default is 80%.
+- A lower value will try to get a closer balance, but possibly with excessive company changes.
+- A higher value will help prevent excessive company changes, but may result in less closely balanced production.
+
+### Maximum Company Production - Industrial and Office
+Maximum production of a company as a percent of the city's production of the resource to allow that company to change.
+- Default is 50%.
+- This option is mostly for small cities where a single company may be responsible for all or most of the city's production of a resource.
+- In this case, the balance logic may continuously rotate production between 2 or a few resources.
+- Use a lower value to reduce company changes.
+- Use a higher value to allow more company changes.
+
+### Hide Production Balance Statistics Button
+Hide the button for **Production Balance Statistics**.
+- Default is visible (unchecked).
+- When the button is hidden, the keyboard shortcut can still be used to display or hide the statistics.
+
+### Statistics Keyboard Shortcut
+Keyboard shortcut for displaying and hiding the **Production Balance Statistics**.
+- Default is Shift+Ctrl+B.
+
+### Reset
+Reset production balance options to default values.
+Reset also hides the **Production Balance Statistics** screen and resets its position.
+
+
+## Lock Company
+The options for **Lock Company** are described below.
 
 ### Lock After Change
 When this option is clear (default):

@@ -4,6 +4,7 @@ using Colossal.UI;
 using Game;
 using Game.Modding;
 using Game.SceneFlow;
+using Game.Simulation;
 using Game.UI.InGame;
 using System;
 using System.Collections.Generic;
@@ -39,6 +40,7 @@ namespace ChangeCompany
                 // Register and load mod settings.
                 ModSettings = new ModSettings(this);
                 ModSettings.RegisterInOptionsUI();
+                ModSettings.RegisterKeyBindings();
                 AssetDatabase.global.LoadSettings(ModAssemblyInfo.Name, ModSettings, new ModSettings(this));
                 ModSettings.Loaded();
 
@@ -107,24 +109,29 @@ namespace ChangeCompany
                     middleSections.Insert(companySectionIndex + 2, lockCompanySection);
                 }
 
-                // Create and activate this mod's ChangeCompanySystem which contains the logic to change or remove the company on a property.
+                // Activate this mod's ChangeCompanySystem which contains the logic to change or remove the company on a property.
                 // In the game, this logic is normally executed in the GameSimulation phase.
                 // Of course, the GameSimulation phase runs only when the simulation is running.
                 // It is highly desired to allow the player to change companies while the game is paused.
                 // Therefore, ChangeCompanySystem updates in the PostSimulation phase, which runs even when the game is paused.
                 updateSystem.UpdateAt<ChangeCompanySystem>(SystemUpdatePhase.PostSimulation);
 
+                // Activate this mod's production balance systems.
+                // Run after the TimeSystem which updates the game date/time.
+                updateSystem.UpdateAfter<ProductionBalanceSystem, TimeSystem>(SystemUpdatePhase.GameSimulation);
+                updateSystem.UpdateAt<ProductionBalanceUISystem>(SystemUpdatePhase.UIUpdate);
+
+
 #if DEBUG
                 // Get localized text from the game where the value is or contains specific text.
                 //Colossal.Localization.LocalizationManager localizationManager = Game.SceneFlow.GameManager.instance.localizationManager;
-                //foreach (System.Collections.Generic.KeyValuePair<string, string> keyValue in localizationManager.activeDictionary.entries)
+                //foreach (KeyValuePair<string, string> keyValue in localizationManager.activeDictionary.entries)
                 //{
                 //    // Exclude assets.
                 //    if (!keyValue.Key.StartsWith("Assets."))
                 //    {
-                //        //if (keyValue.Key.ToLower().Contains("concat"))
-                //        if (keyValue.Key.Contains("ChangeCompany"))
-                //        //if (keyValue.Value == "Quit Game")
+                //        //if (keyValue.Key.ToLower().Contains("year"))
+                //        if (keyValue.Value == "B")
                 //        {
                 //            log.Info(keyValue.Key + "\t" + keyValue.Value);
                 //        }
@@ -136,9 +143,9 @@ namespace ChangeCompany
                 //foreach (string localeID in localeIDs)
                 //{
                 //    localizationManager.SetActiveLocale(localeID);
-                //    foreach (System.Collections.Generic.KeyValuePair<string, string> keyValue in localizationManager.activeDictionary.entries)
+                //    foreach (KeyValuePair<string, string> keyValue in localizationManager.activeDictionary.entries)
                 //    {
-                //        if (keyValue.Key == "ChangeCompany.ChangeCompany")
+                //        if (keyValue.Key == "Options.INPUT_CONTROL[Keyboard.ctrl]")
                 //        {
                 //            log.Info(keyValue.Key + "\t" + localeID + "\t" + keyValue.Value);
                 //            break;

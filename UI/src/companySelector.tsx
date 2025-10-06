@@ -1,14 +1,12 @@
-﻿import { bindValue, useValue, trigger           } from "cs2/api";
+﻿import { useValue, trigger                      } from "cs2/api";
 import { Dropdown, DropdownItem, DropdownToggle } from "cs2/ui";
 
+import { bindingSelectedCompanyIndex            } from "bindings";
 import { CompanyInfo, SpecialCompanyType        } from "changeCompanyComponent";
 import   styles                                   from "companySelector.module.scss";
 import   mod                                      from "../mod.json";
 import { ModuleResolver                         } from "moduleResolver";
 import { ResourceIconLabel                      } from "resourceIconLabel";
-
-// Define binding.
-const bindingSelectedCompanyIndex = bindValue<number>(mod.id, "SelectedCompanyIndex", 0);
 
 // Define props for company selector dropdown.
 type CompanySelectorProps =
@@ -19,7 +17,7 @@ type CompanySelectorProps =
 // Custom dropdown for selecting a company.
 export const CompanySelector = (props: CompanySelectorProps) =>
 {
-    // Get the value from binding.
+    // Get the selected company index from binding.
     const selectedCompanyIndex: number = useValue(bindingSelectedCompanyIndex);
 
     // Define special company indexes.
