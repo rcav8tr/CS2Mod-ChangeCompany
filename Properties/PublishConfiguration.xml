@@ -288,7 +288,7 @@ The following mods were used in the development of this mod:
     <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/change-company.1808488/" />
 
     <!-- Version of the mod.  Copied from assembly Version. -->
-    <ModVersion Value="3.0.0" />
+    <ModVersion Value="3.0.1" />
 
     <!-- Recommended version of the base game to use the mod. -->
     <GameVersion Value="1.3.*" />
@@ -302,8 +302,7 @@ The following mods were used in the development of this mod:
 
     <!-- Change log.  Copied from ChangeLog.md file.  Supports minimal markdown subset. -->
     <ChangeLog>
-- Add new **Production Balance** feature which will automatically balance industrial and office production
-  according to resource surplus and deficit.
+- Fix warnings in UI.log file.
 </ChangeLog>
 
     <!-- External links.  Can be set multiple times. -->

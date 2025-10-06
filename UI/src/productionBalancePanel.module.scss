@@ -3,11 +3,8 @@
     opacity:                    1;
     margin:                     0px;
 
-    // Set panel width to automatically scale according to font size.
-    // The actual computed width does not seem to actually matter as long as a width is calculated and with fontScale added.
-    // The panel then seems to adjust its width automatically according to the width of the heading text, labels, and data.
-    // Panel height automatically adjusts itself according to font size and content.
-    width:                      calc(100rem + var(--fontScale));
+    // By NOT specifying a panel width and height, they defauilt to "auto",
+    // which automatically adjusts the panel size for font scale and content, as desired.
 }
 
 .productionBalancePanelHeader {
