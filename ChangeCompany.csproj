@@ -9,8 +9,8 @@
         <!--The file where mod information which is required for publishing mod on PDX mods are stored-->
         <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
         <Title>Change Company</Title>
-        <Version>3.0.1</Version>
-        <Description>Change the company for a commercial, industrial, or office building.</Description>
+        <Version>3.0.2</Version>
+        <Description>Mod with 3 main features: Change Company, Production Balance, and Lock Company.</Description>
         <Copyright>Copyright © 2025</Copyright>
         <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
         <PDXAccountDataPath>$(USERPROFILE)\Documents\Visual Studio Projects\Cities Skylines 2 Mods\My Mods\pdx_account.txt</PDXAccountDataPath>
@@ -24,7 +24,6 @@
       <None Remove="Images\CompanyChanged.dxt5" />
       <None Remove="Images\CompanyChanged.png" />
       <None Remove="Images\CompanyChanged.svg" />
-      <None Remove="Localization\Translation.csv" />
     </ItemGroup>
     <ItemGroup>
       <EmbeddedResource Include="Images\CompanyChanged.dxt5" />

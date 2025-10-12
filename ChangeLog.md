@@ -1,1 +1,2 @@
-﻿- Fix warnings in UI.log file.
+﻿- Fix compatibility issue with Advanced Building Control mod.
+- Improve localization handling.

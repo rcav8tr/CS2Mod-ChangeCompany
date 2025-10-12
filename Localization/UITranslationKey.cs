@@ -5,59 +5,59 @@ namespace ChangeCompany
     public class UITranslationKey
     {
         // Error text.
-        public const string IncompatibleWithEconomyFixes                            = ModAssemblyInfo.Name + ".IncompatibleWithEconomyFixes";
+        public const string IncompatibleWithEconomyFixes                                    = ModAssemblyInfo.Name + ".IncompatibleWithEconomyFixes";
 
         // Section text for Change Company.
-        public const string ChangeCompany                                           = ModAssemblyInfo.Name + ".ChangeCompany";
-        public const string ChangeThis                                              = ModAssemblyInfo.Name + ".ChangeThis";
-        public const string ChangeAll                                               = ModAssemblyInfo.Name + ".ChangeAll";
-        public const string Random                                                  = ModAssemblyInfo.Name + ".Random";
-        public const string Remove                                                  = ModAssemblyInfo.Name + ".Remove";
+        public const string ChangeCompany                                                   = ModAssemblyInfo.Name + ".ChangeCompany";
+        public const string ChangeThis                                                      = ModAssemblyInfo.Name + ".ChangeThis";
+        public const string ChangeAll                                                       = ModAssemblyInfo.Name + ".ChangeAll";
+        public const string Random                                                          = ModAssemblyInfo.Name + ".Random";
+        public const string Remove                                                          = ModAssemblyInfo.Name + ".Remove";
 
         // Section text for Lock Company.
-        public const string LockCompany                                             = ModAssemblyInfo.Name + ".LockCompany";
-        public const string LockAll                                                 = ModAssemblyInfo.Name + ".LockAll";
-        public const string UnlockAll                                               = ModAssemblyInfo.Name + ".UnlockAll";
+        public const string LockCompany                                                     = ModAssemblyInfo.Name + ".LockCompany";
+        public const string LockAll                                                         = ModAssemblyInfo.Name + ".LockAll";
+        public const string UnlockAll                                                       = ModAssemblyInfo.Name + ".UnlockAll";
 
         // Section tool tips for change company, one for each property type.
         private const string SectionTooltipPrefix = ".SectionTooltip";
-        public const string SectionTooltipCommercial                                = ModAssemblyInfo.Name + SectionTooltipPrefix + "Commercial";
-        public const string SectionTooltipIndustrial                                = ModAssemblyInfo.Name + SectionTooltipPrefix + "Industrial";
-        public const string SectionTooltipOffice                                    = ModAssemblyInfo.Name + SectionTooltipPrefix + "Office";
-        public const string SectionTooltipStorage                                   = ModAssemblyInfo.Name + SectionTooltipPrefix + "Storage";
+        public const string SectionTooltipCommercial                                        = ModAssemblyInfo.Name + SectionTooltipPrefix + "Commercial";
+        public const string SectionTooltipIndustrial                                        = ModAssemblyInfo.Name + SectionTooltipPrefix + "Industrial";
+        public const string SectionTooltipOffice                                            = ModAssemblyInfo.Name + SectionTooltipPrefix + "Office";
+        public const string SectionTooltipStorage                                           = ModAssemblyInfo.Name + SectionTooltipPrefix + "Storage";
 
         // Section tool tip for optional change all.
-        public const string SectionTooltipChangeAll                                 = ModAssemblyInfo.Name + SectionTooltipPrefix + "ChangeAll";
+        public const string SectionTooltipChangeAll                                         = ModAssemblyInfo.Name + SectionTooltipPrefix + "ChangeAll";
 
         // Section tool tip for lock company.
-        public const string SectionTooltipLockCompany                               = ModAssemblyInfo.Name + SectionTooltipPrefix + "LockCompany";
+        public const string SectionTooltipLockCompany                                       = ModAssemblyInfo.Name + SectionTooltipPrefix + "LockCompany";
 
         // Production balance button and panel heading.
-        public const string ProductionBalanceStatistics                             = ModAssemblyInfo.Name + ".ProductionBalanceStatistics";
-        public const string ProductionBalanceDescription                            = ModAssemblyInfo.Name + ".ProductionBalanceDescription";
-        public const string ProductionBalanceShortcut                               = ModAssemblyInfo.Name + ".ProductionBalanceShortcut";
+        public const string ProductionBalanceStatistics                                     = ModAssemblyInfo.Name + ".ProductionBalanceStatistics";
+        public const string ProductionBalanceDescription                                    = ModAssemblyInfo.Name + ".ProductionBalanceDescription";
+        public const string ProductionBalanceShortcut                                       = ModAssemblyInfo.Name + ".ProductionBalanceShortcut";
 
         // Production balance industrial and office headings.
-        public const string ProductionBalanceIndustrial                             = ModAssemblyInfo.Name + ".ProductionBalanceIndustrial";
-        public const string ProductionBalanceOffice                                 = ModAssemblyInfo.Name + ".ProductionBalanceOffice";
+        public const string ProductionBalanceIndustrial                                     = ModAssemblyInfo.Name + ".ProductionBalanceIndustrial";
+        public const string ProductionBalanceOffice                                         = ModAssemblyInfo.Name + ".ProductionBalanceOffice";
 
         // Production balance info on panel.
-        public const string ProductionBalanceInfoCompanies                          = ModAssemblyInfo.Name + ".ProductionBalanceInfoCompanies";
-        public const string ProductionBalanceInfoCompaniesTooltip                   = ModAssemblyInfo.Name + ".ProductionBalanceInfoCompaniesTooltip";
-        public const string ProductionBalanceInfoMinimumCompanies                   = ModAssemblyInfo.Name + ".ProductionBalanceInfoMinimumCompanies";
-        public const string ProductionBalanceInfoMinimumCompaniesTooltip            = ModAssemblyInfo.Name + ".ProductionBalanceInfoMinimumCompaniesTooltip";
-        public const string ProductionBalanceInfoStandardDeviation                  = ModAssemblyInfo.Name + ".ProductionBalanceInfoStandardDeviation";
-        public const string ProductionBalanceInfoStandardDeviationTooltip           = ModAssemblyInfo.Name + ".ProductionBalanceInfoStandardDeviationTooltip";
-        public const string ProductionBalanceInfoMinimumStandardDeviation           = ModAssemblyInfo.Name + ".ProductionBalanceInfoMinimumStandardDeviation";
-        public const string ProductionBalanceInfoMinimumStandardDeviationTooltip    = ModAssemblyInfo.Name + ".ProductionBalanceInfoMinimumStandardDeviationTooltip";
-        public const string ProductionBalanceInfoLastChangeDateTime                 = ModAssemblyInfo.Name + ".ProductionBalanceInfoLastChangeDateTime";
-        public const string ProductionBalanceInfoLastChangeDateTimeTooltip          = ModAssemblyInfo.Name + ".ProductionBalanceInfoLastChangeDateTimeTooltip";
-        public const string ProductionBalanceInfoLastChangeFromResource             = ModAssemblyInfo.Name + ".ProductionBalanceInfoLastChangeFromResource";
-        public const string ProductionBalanceInfoLastChangeFromResourceTooltip      = ModAssemblyInfo.Name + ".ProductionBalanceInfoLastChangeFromResourceTooltip";
-        public const string ProductionBalanceInfoLastChangeToResource               = ModAssemblyInfo.Name + ".ProductionBalanceInfoLastChangeToResource";
-        public const string ProductionBalanceInfoLastChangeToResourceTooltip        = ModAssemblyInfo.Name + ".ProductionBalanceInfoLastChangeToResourceTooltip";
-        public const string ProductionBalanceInfoNextCheckDateTime                  = ModAssemblyInfo.Name + ".ProductionBalanceInfoNextCheckDateTime";
-        public const string ProductionBalanceInfoNextCheckDateTimeTooltip           = ModAssemblyInfo.Name + ".ProductionBalanceInfoNextCheckDateTimeTooltip";
+        public const string ProductionBalanceInfoCompanies                                  = ModAssemblyInfo.Name + ".ProductionBalanceInfoCompanies";
+        public const string ProductionBalanceInfoCompaniesTooltip                           = ModAssemblyInfo.Name + ".ProductionBalanceInfoCompaniesTooltip";
+        public const string ProductionBalanceInfoMinimumCompanies                           = ModAssemblyInfo.Name + ".ProductionBalanceInfoMinimumCompanies";
+        public const string ProductionBalanceInfoMinimumCompaniesTooltip                    = ModAssemblyInfo.Name + ".ProductionBalanceInfoMinimumCompaniesTooltip";
+        public const string ProductionBalanceInfoStandardDeviation                          = ModAssemblyInfo.Name + ".ProductionBalanceInfoStandardDeviation";
+        public const string ProductionBalanceInfoStandardDeviationTooltip                   = ModAssemblyInfo.Name + ".ProductionBalanceInfoStandardDeviationTooltip";
+        public const string ProductionBalanceInfoMinimumStandardDeviation                   = ModAssemblyInfo.Name + ".ProductionBalanceInfoMinimumStandardDeviation";
+        public const string ProductionBalanceInfoMinimumStandardDeviationTooltip            = ModAssemblyInfo.Name + ".ProductionBalanceInfoMinimumStandardDeviationTooltip";
+        public const string ProductionBalanceInfoLastChangeDateTime                         = ModAssemblyInfo.Name + ".ProductionBalanceInfoLastChangeDateTime";
+        public const string ProductionBalanceInfoLastChangeDateTimeTooltip                  = ModAssemblyInfo.Name + ".ProductionBalanceInfoLastChangeDateTimeTooltip";
+        public const string ProductionBalanceInfoLastChangeFromResource                     = ModAssemblyInfo.Name + ".ProductionBalanceInfoLastChangeFromResource";
+        public const string ProductionBalanceInfoLastChangeFromResourceTooltip              = ModAssemblyInfo.Name + ".ProductionBalanceInfoLastChangeFromResourceTooltip";
+        public const string ProductionBalanceInfoLastChangeToResource                       = ModAssemblyInfo.Name + ".ProductionBalanceInfoLastChangeToResource";
+        public const string ProductionBalanceInfoLastChangeToResourceTooltip                = ModAssemblyInfo.Name + ".ProductionBalanceInfoLastChangeToResourceTooltip";
+        public const string ProductionBalanceInfoNextCheckDateTime                          = ModAssemblyInfo.Name + ".ProductionBalanceInfoNextCheckDateTime";
+        public const string ProductionBalanceInfoNextCheckDateTimeTooltip                   = ModAssemblyInfo.Name + ".ProductionBalanceInfoNextCheckDateTimeTooltip";
 
         // Settings.
         public const string SettingTitle                                                    = "Options.SECTION" +       "[ChangeCompany.ChangeCompany.Mod]";
@@ -102,6 +102,5 @@ namespace ChangeCompany
         public const string SettingGroupAbout                                               = "Options.GROUP" +         "[ChangeCompany.ChangeCompany.Mod.About]";
         public const string SettingModVersionLabel                                          = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.ModVersion]";
         public const string SettingModVersionDesc                                           = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.ModVersion]";
-
     }
 }

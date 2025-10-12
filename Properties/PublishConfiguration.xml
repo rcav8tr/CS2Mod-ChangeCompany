@@ -10,7 +10,7 @@
     <DisplayName Value="Change Company" />
 
     <!-- Short description of the mod.  Copied from assembly Description. -->
-    <ShortDescription Value="Change the company for a commercial, industrial, or office building." />
+    <ShortDescription Value="Mod with 3 main features: Change Company, Production Balance, and Lock Company." />
 
     <!-- Long description of the mod.  Copied from ReadMe.md file.  Supports minimal markdown subset. -->
     <LongDescription>
@@ -288,7 +288,7 @@ The following mods were used in the development of this mod:
     <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/change-company.1808488/" />
 
     <!-- Version of the mod.  Copied from assembly Version. -->
-    <ModVersion Value="3.0.1" />
+    <ModVersion Value="3.0.2" />
 
     <!-- Recommended version of the base game to use the mod. -->
     <GameVersion Value="1.3.*" />
@@ -302,7 +302,8 @@ The following mods were used in the development of this mod:
 
     <!-- Change log.  Copied from ChangeLog.md file.  Supports minimal markdown subset. -->
     <ChangeLog>
-- Fix warnings in UI.log file.
+- Fix compatibility issue with Advanced Building Control mod.
+- Improve localization handling.
 </ChangeLog>
 
     <!-- External links.  Can be set multiple times. -->

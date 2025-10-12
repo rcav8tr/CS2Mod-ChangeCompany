@@ -75,10 +75,14 @@ namespace ChangeCompany
         /// </summary>
         public CompanyInfos(List<Entity> companyPrefabs, ComponentLookup<IndustrialProcessData> componentLookupIndustrialProcessData)
         {
-            // Add each company.
+            // Add each company whose output resource is one of the resources for ordering.
             foreach (Entity companyPrefab in companyPrefabs)
             {
-                Add(new CompanyInfo(companyPrefab, componentLookupIndustrialProcessData[companyPrefab]));
+                IndustrialProcessData industrialProcessData = componentLookupIndustrialProcessData[companyPrefab];
+                if (ResourceOrder.Contains(industrialProcessData.m_Output.m_Resource))
+                {
+                    Add(new CompanyInfo(companyPrefab, industrialProcessData));
+                }
             }
 
             // Use nested loops to sort companies by the resources they have.

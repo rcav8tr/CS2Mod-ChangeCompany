@@ -18,21 +18,22 @@ namespace ChangeCompany
         // Translations are in the Translation.csv file.
         // The translation file is an embedded resource in the mod DLL so that a separate file does not need to be downloaded with the mod.
         // The translation file was created and maintained using LibreOffice Calc.
+        private const string TranslationFile = ModAssemblyInfo.Name + ".Localization.Translation.csv";
 
         // Translation file format:
-        //      Line 1: blank,language code 1,language code 2,...,language code n
+        //      Line 1: blank,locale ID 1,locale ID 2,...,locale ID n
         //      Line 2: translation key 1,translated text 1,translated text 2,...,translated text n
         //      Line 3: translation key 2,translated text 1,translated text 2,...,translated text n
         //      ...
         //      Line m: translation key m-1,translated text 1,translated text 2,...,translated text n
 
         // Translation file notes:
-        //      The first line in the file must contain language codes and therefore cannot be blank or a comment.
-        //      The file must contain translations for the default language code.
-        //      The file should contain translations for every language code supported by the base game.
-        //      The file may contain translations for additional language codes.
-        //      Language codes in the file may be in any order, except that the default language code must be first.
-        //      A language code may not be duplicated.
+        //      The first line in the file must contain locale IDs and therefore cannot be blank or a comment.
+        //      The file must contain translations for the default locale ID.
+        //      The file should contain translations for every locale ID supported by the base game.
+        //      The file may contain translations for additional locale IDs.
+        //      Locale IDs in the file may be in any order, except that the default locale ID must be first.
+        //      A locale ID may not be duplicated.
         //      A blank line is skipped.
         //      A line with a blank translation key is skipped (except the first line).
         //      A line with a translation key that starts with the character (#) is considered a comment and is skipped.
@@ -41,21 +42,21 @@ namespace ChangeCompany
         //      If a translation key is duplicated, then a newline and the translated text are appended to the previous translated text for that key.
         //      Any \n in the translated text is replaced with a newline.
         //      The file must not contain blank columns.
-        //      Each language code, translation key, and translated text may or may not be enclosed in double quotes ("text").
+        //      Each locale ID, translation key, and translated text may or may not be enclosed in double quotes ("text").
         //      Spaces around the comma separators will be included in the translated text.
         //      To include a comma in the translated text, the translated text must be enclosed in double quotes ("te, xt").
         //      To include a double quote in the translated text, use two consecutive double quotes inside the double quoted translated text ("te""xt").
         //      Translated text that contains "@@" will use the translated text from the translation key after the "@@".
         //      The translation key referenced with "@@" must have been read prior to the line with the "@@".
         //      A translation key that starts with "@@" is a temporary translation key that can be referenced in other translated text with "@@".
-        //      Translated text cannot be blank for the default language.
-        //      Blank translated text in a non-default language will use the translated text for the default language.
+        //      Translated text cannot be blank for the default locale.
+        //      Blank translated text in a non-default locale will use the translated text for the default locale.
         //      Translated text that starts with "$$" will retrieve the game's translated text for whatever key follows the "$$".
 
-        // Default language code.
-        private const string DefaultLanguageCode = "en-US";
+        // Default locale ID.
+        private const string DefaultLocaleID = "en-US";
 
-        // Translations for a single language.
+        // Translations for a single locale.
         // Dictionary key is the translation key.
         // Dictionary value is the translated text for that translation key.
         private class Translations : Dictionary<string, string>
@@ -73,10 +74,11 @@ namespace ChangeCompany
             }
         }
 
-        // Translations for all languages in the file.
-        // Dictionary key is the language code.
-        // Dictionary value contains the translations for that language code.
-        private class Languages : Dictionary<string, Translations> { }
+        // Maintain a list of locale IDs that this mod added to the localization manager.
+        private static readonly List<string> _addedLocaleIDs = new();
+
+        // The game's localization manager.
+        private static readonly LocalizationManager _localizationManager = GameManager.instance.localizationManager;
         
         /// <summary>
         /// A localization source that can be added to the game.
@@ -84,8 +86,12 @@ namespace ChangeCompany
         private class LocalizationSource : IDictionarySource
         {
             // The translations for this localization source.
-            private Translations _translations = new Translations();
+            private readonly Translations _translations = new();
 
+            // Prevent instantiation without translations.
+            private LocalizationSource() { }
+
+            // Instantiate with translations.
             public LocalizationSource(Translations translations)
             {
                 // Do each translation key.
@@ -109,7 +115,7 @@ namespace ChangeCompany
                 // Nothing to do here, but implementation is required.
             }
         }
-        
+
         /// <summary>
         /// Initialize the translations from the translation file.
         /// </summary>
@@ -119,83 +125,99 @@ namespace ChangeCompany
             {
                 Mod.log.Info($"{nameof(Translation)}.{nameof(Initialize)}");
 
-                // Translation keys are the constant names (not values) from UITranslationKey.
-                FieldInfo[] fields = typeof(UITranslationKey).GetFields();
+                // Make sure the translation CSV file exists.
+                if (!Assembly.GetExecutingAssembly().GetManifestResourceNames().Contains(TranslationFile))
+                {
+                    Mod.log.Error($"Translation file [{TranslationFile}] does not exist in the assembly.");
+                    return;
+                }
+
+                // Set initial translations for the active locale.
+                SetTranslationsForActiveLocale();
+
+                // When active dictionary changes, set translations for the newly active locale.
+                // A "dictionary change" includes a change to the content of the active dictionary or a change to the active locale ID.
+                // This mod cares only about changes to the active locale ID and does not handle a change to the content.
+                _localizationManager.onActiveDictionaryChanged += SetTranslationsForActiveLocale;
+            }
+            catch(Exception ex)
+            {
+                Mod.log.Error(ex);
+            }
+        }
+
+        /// <summary>
+        /// Set translations for the active locale.
+        /// </summary>
+        private static void SetTranslationsForActiveLocale()
+        {
+            try
+            {
+                // If translations for the active locale were already added, do not load translations again.
+                string activeLocaleID = _localizationManager.activeLocaleId;
+                if (_addedLocaleIDs.Contains(activeLocaleID))
+                {
+                    return;
+                }
+                
+                Mod.log.Info($"Setting mod translations for active locale: {activeLocaleID}");
+
+                // Read all the text from the translation CSV file.
+                string fileText;
+                using (Stream fileStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(TranslationFile))
+                {
+                    using (StreamReader fileReader = new(fileStream, Encoding.UTF8))
+                    {
+                        fileText = fileReader.ReadToEnd();
+                    }
+                }
+
+                // Split the file text into lines.
+                string[] lines = fileText.Split(new string[] { "\n", "\r\n" }, StringSplitOptions.None);
+
+                // Get locale IDs from the first line of the file.
+                if (!GetFileLocaleIDs(lines[0], out List<string> fileLocaleIDs))
+                {
+                    return;
+                }
+
+                // Get translation keys.
+                // These are the names (not values) of all the public fields in UITranslationKey.
+                FieldInfo[] fields = typeof(UITranslationKey).GetFields(BindingFlags.Public | BindingFlags.Static);
                 string[] translationKeys = new string[fields.Length];
                 for (int i = 0; i < fields.Length; i++)
                 {
                     translationKeys[i] = fields[i].Name;
                 }
 
-                // Start with only the default language.
-                Languages languages = new Languages();
-                languages.Add(DefaultLanguageCode, new Translations(translationKeys));
-
-                // Make sure the translation CSV file exists.
-                const string translationFile = ModAssemblyInfo.Name + ".Localization.Translation.csv";
-                if (!Assembly.GetExecutingAssembly().GetManifestResourceNames().Contains(translationFile))
-                {
-                    Mod.log.Error($"Translation file [{translationFile}] does not exist in the assembly.");
-                    return;
-                }
-
-                // Read the text from the translation CSV file.
-                string fileText;
-                using (Stream fileStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(translationFile))
-                {
-                    using (StreamReader fileReader = new StreamReader(fileStream, Encoding.UTF8))
-                    {
-                        fileText = fileReader.ReadToEnd();
-                    }
-                }
-
-                // Split the text into lines.
-                string[] lines = fileText.Split(new string[] { "\n", "\r\n" }, StringSplitOptions.None);
-
-                // First line cannot be blank or a comment.
-                string firstLine = lines[0];
-                if (firstLine.Trim().Length == 0 || firstLine.StartsWith("#"))
-                {
-                    Mod.log.Error("Translation file first line is blank or comment. Expecting language codes on the first line.");
-                    return;
-                }
-
-                // Read language codes from the first line.
-                ReadLanguageCodes(firstLine, languages, translationKeys);
-
-                // Create temporary translations for each language code.
-                Languages temporaryTranslations = new Languages();
-                foreach (string languageCode in languages.Keys)
-                {
-                    temporaryTranslations.Add(languageCode, new Translations());
-                }
+                // Create new regular and temporary translations for the default and active locales.
+                // The translations for the default locale are obtained regardless of the active locale
+                // so that if a translation is blank for the active locale, the translation for the default locale can be used.
+                Translations translationsRegularDefaultLocale   = new(translationKeys);
+                Translations translationsRegularActiveLocale    = new(translationKeys);
+                Translations translationsTemporaryDefaultLocale = new();
+                Translations translationsTemporaryActiveLocale  = new();
 
                 // Initialize count of translation keys.
-                Dictionary<string, int> translationKeyCount = new Dictionary<string, int>();
+                Dictionary<string, int> translationKeyCount = new();
                 foreach (string translationKey in translationKeys)
                 {
                     translationKeyCount.Add(translationKey, 0);
                 }
-                
-                // Check if file text has any $$ references to game translations.
-                Dictionary<string, LocalizationDictionary> gameTranslations = new Dictionary<string, LocalizationDictionary>();
-                LocalizationManager localizationManager = GameManager.instance.localizationManager;
-                if (fileText.Contains("$$"))
-                {
-                    // Get game translations once here instead of every time a $$ reference is encountered.
-                    string currentLocaleID = localizationManager.activeLocaleId;
-                    foreach (string gameLocaleID in localizationManager.GetSupportedLocales())
-                    {
-                        localizationManager.SetActiveLocale(gameLocaleID);
-                        gameTranslations[gameLocaleID] = localizationManager.activeDictionary;
-                    }
-                    localizationManager.SetActiveLocale(currentLocaleID);
-                }
 
-                // Process each subsequent line.
+                // Process each subsequent line in the file.
                 for (int i = 1; i < lines.Length; i++)
                 {
-                    ProcessTranslationLine(lines[i], languages, temporaryTranslations, gameTranslations, translationKeys, translationKeyCount);
+                    ProcessTranslationLine(
+                        lines[i],
+                        activeLocaleID,
+                        fileLocaleIDs,
+                        translationsRegularDefaultLocale,
+                        translationsRegularActiveLocale,
+                        translationsTemporaryDefaultLocale,
+                        translationsTemporaryActiveLocale,
+                        translationKeys,
+                        translationKeyCount);
                 }
 
                 // Each translation key must be defined.
@@ -204,14 +226,25 @@ namespace ChangeCompany
                     if (translationKeyCount[translationkey] == 0)
                     {
                         Mod.log.Warn($"Translation key [{translationkey}] is not defined in the translation file.");
+                        translationsRegularActiveLocale[translationkey] = translationkey;
                     }
                 }
 
-                // Add localization sources to the game.
-                // All the translations were read into the languages variable just for this right here.
-                foreach (string languageCode in languages.Keys)
+                // Remember that the active locale ID was (i.e. is about to be) added.
+                // It is important to do this BEFORE calling AddSource below.
+                // AddSource causes onActiveDictionaryChanged to be triggered, which causes this method to be called again.
+                // Remembering the locale ID first prevents this method from trying to add the source again.
+                _addedLocaleIDs.Add(activeLocaleID);
+
+                // Add localization source to the game for active locale using regular translations for the active or default locale.
+                if (fileLocaleIDs.Contains(activeLocaleID))
                 {
-                    localizationManager.AddSource(languageCode, new LocalizationSource(languages[languageCode]));
+                    _localizationManager.AddSource(activeLocaleID, new LocalizationSource(translationsRegularActiveLocale));
+                }
+                else
+                {
+                    Mod.log.Warn($"Translation file does not define locale ID [{activeLocaleID}]. Using default translations.");
+                    _localizationManager.AddSource(activeLocaleID, new LocalizationSource(translationsRegularDefaultLocale));
                 }
             }
             catch(Exception ex)
@@ -221,61 +254,77 @@ namespace ChangeCompany
         }
 
         /// <summary>
-        /// Read languages codes from the first line in the file.
+        /// Get locale IDs from the first line in the file.
         /// </summary>
-        private static void ReadLanguageCodes(string line, Languages languages, string[] translationKeys)
+        private static bool GetFileLocaleIDs(string firstLine, out List<string> fileLocaleIDs)
         {
-            // Initialize count of language codes.
-            Dictionary<string, int> languageCodeCount = new Dictionary<string, int>();
-            foreach (string languageCode in languages.Keys)
-            {
-                languageCodeCount.Add(languageCode, 0);
-            };
+            // No file locale IDs to start.
+            fileLocaleIDs = new();
 
-            // Create a reader on the line.
-            using (StringReader reader = new StringReader(line))
+            // First line cannot be blank or a comment.
+            if (firstLine.Trim().Length == 0 || firstLine.StartsWith("#"))
             {
-                // Read and ignore the first value, which should be blank.
-                ReadCSVValue(reader);
+                Mod.log.Error("Translation file first line is blank or a comment. Expecting locale IDs on the first line.");
+                return false;
+            }
 
-                // Read language codes.
-                bool firstLanguageCode = true;
-                string languageCode = ReadCSVValue(reader);
-                while (languageCode.Length != 0)
+            // Initialize count of locale IDs.
+            Dictionary<string, int> localeIDCount = new();
+
+            // Create a reader on the first line.
+            using (StringReader reader = new(firstLine))
+            {
+                // Read the first value, which must be blank.
+                string firstValue = ReadCSVValue(reader);
+                if (firstValue.Length != 0)
                 {
-                    // Check if language code already exists.
-                    if (languages.ContainsKey(languageCode))
+                    Mod.log.Error("Translation file first line first value must be blank.");
+                    return false;
+                }
+
+                // Read locale IDs as long as there are non-blank values on the line.
+                bool firstLocaleID = true;
+                string localeID = ReadCSVValue(reader).Trim();
+                while (localeID.Length != 0)
+                {
+                    // Check if locale ID already exists.
+                    if (localeIDCount.ContainsKey(localeID))
                     {
-                        // Count language code occurrences.
-                        languageCodeCount[languageCode]++;
+                        // Count locale ID occurrences.
+                        localeIDCount[localeID]++;
                     }
                     else
                     {
-                        // Add the new language code with an initial count of 1.
-                        languages.Add(languageCode, new Translations(translationKeys));
-                        languageCodeCount.Add(languageCode, 1);
+                        // Add the new locale ID with an initial count of 1.
+                        localeIDCount.Add(localeID, 1);
                     }
 
-                    // Check that the first language code in the file is the default language code.
-                    if (firstLanguageCode && languageCode != DefaultLanguageCode)
+                    // Check that the first locale ID in the line is the default locale ID.
+                    if (firstLocaleID && localeID != DefaultLocaleID)
                     {
-                        Mod.log.Warn($"Translation file must have default language code [{DefaultLanguageCode}] defined first.");
+                        Mod.log.Error($"Translation file must have default locale ID [{DefaultLocaleID}] defined first.");
+                        return false;
                     }
 
-                    // Get next language code.
-                    languageCode = ReadCSVValue(reader);
-                    firstLanguageCode = false;
+                    // Get next locale ID from the line.
+                    localeID = ReadCSVValue(reader);
+                    firstLocaleID = false;
                 }
             }
 
-            // Each language code must be defined exactly once.
-            foreach (string languageCode in languageCodeCount.Keys)
+            // Each locale ID must be defined exactly once.
+            foreach (string localeID in localeIDCount.Keys)
             {
-                if (languageCodeCount[languageCode] != 1)
+                if (localeIDCount[localeID] != 1)
                 {
-                    Mod.log.Warn($"Translation file defines language code [{languageCode}] {languageCodeCount[languageCode]} times.  Expecting 1 time.");
+                    Mod.log.Error($"Translation file defines locale ID [{localeID}] {localeIDCount[localeID]} times.  Expecting 1 time.");
+                    return false;
                 }
             }
+
+            // File locale IDs are valid.
+            fileLocaleIDs = localeIDCount.Keys.ToList();
+            return true;
         }
 
         /// <summary>
@@ -284,9 +333,12 @@ namespace ChangeCompany
         private static void ProcessTranslationLine
         (
             string line,
-            Languages languages,
-            Languages temporaryTranslations,
-            Dictionary<string, LocalizationDictionary> gameTranslations,
+            string activeLocaleID,
+            List<string> fileLocaleIDs,
+            Translations translationsRegularDefaultLocale,
+            Translations translationsRegularActiveLocale,
+            Translations translationsTemporaryDefaultLocale,
+            Translations translationsTemporaryActiveLocale,
             string[] translationKeys,
             Dictionary<string, int> translationKeyCount
         )
@@ -298,29 +350,28 @@ namespace ChangeCompany
             }
 
             // Create a string reader on the line.
-            using (StringReader reader = new StringReader(line))
+            using (StringReader reader = new(line))
             {
                 // The first value in the line is the translation key.
                 string translationKey = ReadCSVValue(reader);
 
                 // Skip lines with a blank or comment translation key.
-                if (translationKey.Length == 0 || translationKey.StartsWith("#"))
+                if (translationKey.Trim().Length == 0 || translationKey.StartsWith("#"))
                 {
                     return;
                 }
 
                 // Check for temporary key.
-                bool temporaryKey = translationKey.StartsWith("@@");
-                if (temporaryKey)
+                bool isTemporaryKey = translationKey.StartsWith("@@");
+                if (isTemporaryKey)
                 {
                     // Check if temporary key does not already exist.
-                    if (!temporaryTranslations[DefaultLanguageCode].ContainsKey(translationKey))
+                    if (!translationsTemporaryDefaultLocale.ContainsKey(translationKey))
                     {
-                        // For each language code, add the temporary key to the temporary translations.
-                        foreach (string languageCode in languages.Keys)
-                        {
-                            temporaryTranslations[languageCode].Add(translationKey, "");
-                        }
+                        // Add temporary translation key to default and active locales.
+                        // The temporary translation key is saved with its @@ prefix.
+                        translationsTemporaryDefaultLocale.Add(translationKey, "");
+                        translationsTemporaryActiveLocale .Add(translationKey, "");
                     }
                 }
                 else
@@ -339,122 +390,103 @@ namespace ChangeCompany
                     }
                 }
 
-                // Do each language code.
-                foreach (string languageCode in languages.Keys)
+                // Do each locale in the file.
+                foreach (string fileLocaleID in fileLocaleIDs)
                 {
                     // Get the translated text.
+                    // Need to get the text even if the locale is skipped so the reader is advanced to the next locale.
                     string translatedText = ReadCSVValue(reader);
+
+                    // Skip file locale that is not the default or the active locale.
+                    if (!(fileLocaleID == DefaultLocaleID || fileLocaleID == activeLocaleID))
+                    {
+                        continue;
+                    }
 
                     // Check for blank translated text.
                     if (string.IsNullOrEmpty(translatedText))
                     {
-                        // Check for default language.
-                        if (languageCode == DefaultLanguageCode)
+                        // Check for default locale.
+                        if (fileLocaleID == DefaultLocaleID)
                         {
-                            // For default language, warn and use the key as the translated text.
-                            Mod.log.Warn($"Translation for key [{translationKey}] must be defined for default language code [{DefaultLanguageCode}].");
+                            // For default locale, warn and use the key as the translated text.
+                            Mod.log.Warn($"Translation for key [{translationKey}] must be defined for default locale [{DefaultLocaleID}].");
                             translatedText = translationKey;
                         }
                         else
                         {
-                            // Other than default language.
-
-                            // Check for temporary key.
-                            if (temporaryKey)
-                            {
-                                // Use temporary translated text from default language.
-                                translatedText = temporaryTranslations[DefaultLanguageCode][translationKey];
-                            }
-                            else
-                            {
-                                // Use translated text from default language.
-                                translatedText = languages[DefaultLanguageCode][translationKey];
-                            }
+                            // Other than default locale.
+                            // Use temporary or regular translated text from default locale without warning.
+                            // This is a feature, not an error.
+                            translatedText = isTemporaryKey ? 
+                                translationsTemporaryDefaultLocale[translationKey] :
+                                translationsRegularDefaultLocale  [translationKey];
                         }
                     }
 
-                    // Check for $$ reference in the translated text.
+                    // Check for $$ prefix in the translated text.
                     if (translatedText.StartsWith("$$"))
                     {
-                        // Get game translation key after the $$.
+                        // Get game translation key after the $$ prefix.
                         string gameTranslationKey = translatedText.Substring(2);
 
                         // Get the game's translation for the key.
-                        if (gameTranslations.ContainsKey(languageCode))
+                        if (_localizationManager.activeDictionary.TryGetValue(gameTranslationKey, out string gameTranslatedText))
                         {
-                            if (gameTranslations[languageCode].TryGetValue(gameTranslationKey, out string gameTranslatedText))
-                            {
-                                // Use the game translated text.
-                                translatedText = gameTranslatedText;
-                            }
-                            else
-                            {
-                                Mod.log.Warn($"Game translation key [{gameTranslationKey}] does not exist for language [{languageCode}].");
-                                // Leave the invalid $$ reference in the translated text.
-                            }
+                            // Use the game translated text.
+                            translatedText = gameTranslatedText;
                         }
                         else
                         {
-                            Mod.log.Warn($"Game does not contain translations for language [{languageCode}] for translation key [{gameTranslationKey}].");
-                            // Leave the invalid $$ reference in the translated text.
+                            Mod.log.Warn($"Game translation key [{gameTranslationKey}] does not exist for locale [{activeLocaleID}].");
+                            // Leave the $$ prefix and invalid reference in the translated text.
                         }
                     }
 
                     // Check for any @@ reference in the translated text.
                     else if (translatedText.Contains("@@"))
                     {
-                        // Do each existing translation key.
-                        foreach (string existingTranslationkey in translationKeys)
+                        // Replace @@ references with the regular translated text for the regular translation key.
+                        // This works only if the regular translated text is defined before the @@ reference.
+                        Translations translationsRegular = 
+                            fileLocaleID == DefaultLocaleID ? translationsRegularDefaultLocale : translationsRegularActiveLocale;
+                        foreach (string regularTranslationKey in translationsRegular.Keys)
                         {
-                            // Replace the @@ reference with the existing translated text for the existing translation key.
-                            // This works only if the existing translated text is defined before the @@ reference.
-                            translatedText = translatedText.Replace("@@" + existingTranslationkey, languages[languageCode][existingTranslationkey]);
+                            translatedText = translatedText.Replace("@@" + regularTranslationKey, translationsRegular[regularTranslationKey]);
                         }
 
-                        // Do each temporary translation key.
-                        foreach (string temporaryTranslationkey in temporaryTranslations[DefaultLanguageCode].Keys)
+                        // Replace @@ references with the temporary translated text for the temporary translation key.
+                        // This works only if the temporary translated text is defined before the @@ reference.
+                        Translations translationsTemporary =
+                            fileLocaleID == DefaultLocaleID ? translationsTemporaryDefaultLocale : translationsTemporaryActiveLocale;
+                        foreach (string temporaryTranslationKey in translationsTemporary.Keys)
                         {
-                            // Replace the @@ reference with the temporary translated text for the temporary translation key.
-                            // This works only if the temporary translated text is defined before the @@ reference.
-                            translatedText = translatedText.Replace(temporaryTranslationkey, temporaryTranslations[languageCode][temporaryTranslationkey]);
+                            translatedText = translatedText.Replace(temporaryTranslationKey, translationsTemporary[temporaryTranslationKey]);
                         }
 
                         // Check for invalid @@ reference (i.e. an "@@" reference was not replaced above).
                         if (translatedText.Contains("@@"))
                         {
-                            Mod.log.Warn($"Translation for key [{translationKey}] for language [{languageCode}] has an invalid @@ reference.");
-                            // Leave the invalid @@ reference in the translated text.
+                            Mod.log.Warn($"Translation for key [{translationKey}] for locale [{activeLocaleID}] has an invalid @@ reference.");
+                            // Leave the @@ prefix and invalid reference in the translated text.
                         }
                     }
 
-                    // Check if updating temporary or regular translations.
-                    if (temporaryKey)
+                    // Set the translation for the default locale.
+                    if (fileLocaleID == DefaultLocaleID)
                     {
-                        // Check if already have translated text.
-                        if (temporaryTranslations[languageCode][translationKey].Length > 0)
-                        {
-                            // Append a newline and then the new translated text.
-                            temporaryTranslations[languageCode][translationKey] += Environment.NewLine + translatedText;
-                        }
-                        else
-                        {
-                            // Save the translated text.
-                            temporaryTranslations[languageCode][translationKey] = translatedText;
-                        }
+                        // Set the translation for temporary or regular.
+                        Translations translations = isTemporaryKey ? translationsTemporaryDefaultLocale : translationsRegularDefaultLocale;
+                        SetTranslation(translations, translationKey, translatedText);
                     }
-                    else
+
+                    // Set the translation for the active locale.
+                    // The active locale can be and often will be the default locale.
+                    if (fileLocaleID == activeLocaleID)
                     {
-                        // Check if already have translated text.
-                        if (languages[languageCode][translationKey].Length > 0)
-                        {
-                            // Append a newline and then the new translated text.
-                            languages[languageCode][translationKey] += Environment.NewLine + translatedText;
-                        }
-                        else
-                        {
-                            // Save the translated text.
-                            languages[languageCode][translationKey] = translatedText;
-                        }
+                        // Set the translation for temporary or regular.
+                        Translations translations = isTemporaryKey ? translationsTemporaryActiveLocale : translationsRegularActiveLocale;
+                        SetTranslation(translations, translationKey, translatedText);
                     }
                 }
             }
@@ -466,7 +498,7 @@ namespace ChangeCompany
         private static string ReadCSVValue(StringReader reader)
         {
             // The value to return
-            StringBuilder value = new StringBuilder();
+            StringBuilder value = new();
 
             // Read until non-quoted comma or end-of-string is reached.
             bool inQuotes = false;
@@ -525,12 +557,30 @@ namespace ChangeCompany
         }
 
         /// <summary>
+        /// Set the translation for the key and text.
+        /// </summary>
+        private static void SetTranslation(Translations translations, string translationKey, string translatedText)
+        {
+            // Check if translation already has some text.
+            if (translations[translationKey].Length > 0)
+            {
+                // Append a newline and then the new translated text.
+                translations[translationKey] += Environment.NewLine + translatedText;
+            }
+            else
+            {
+                // Set the translated text.
+                translations[translationKey] = translatedText;
+            }
+        }
+
+        /// <summary>
         /// Get the translation of the key using the current active dictionary.
         /// </summary>
         public static string Get(string translationKey)
         {
             // Get the translated text for the translation key.
-            if (GameManager.instance.localizationManager.activeDictionary.TryGetValue(translationKey, out string translatedText))
+            if (_localizationManager.activeDictionary.TryGetValue(translationKey, out string translatedText))
             {
                 return translatedText;
             }
