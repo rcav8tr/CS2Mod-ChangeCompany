@@ -136,6 +136,7 @@ The following statistics are displayed for industrial and for office:
 - Old Resource: the last company to change produced this resource.
 - New Resource: the last company to change now produces this resource.
 - Next Check Date Time: date and time of the next production balance check.
+
 Companies and Standard Deviation require the simulation to run a bit for the values to be calculated and displayed.
 The last change statistics are only since the game was loaded and are displayed only after a production balance is successfully performed.
 
@@ -288,7 +289,7 @@ The following mods were used in the development of this mod:
     <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/change-company.1808488/" />
 
     <!-- Version of the mod.  Copied from assembly Version. -->
-    <ModVersion Value="3.0.2" />
+    <ModVersion Value="3.0.3" />
 
     <!-- Recommended version of the base game to use the mod. -->
     <GameVersion Value="1.3.*" />
@@ -302,8 +303,7 @@ The following mods were used in the development of this mod:
 
     <!-- Change log.  Copied from ChangeLog.md file.  Supports minimal markdown subset. -->
     <ChangeLog>
-- Fix compatibility issue with Advanced Building Control mod.
-- Improve localization handling.
+- Prevent error with game version 1.3.6.
 </ChangeLog>
 
     <!-- External links.  Can be set multiple times. -->

@@ -15,7 +15,7 @@ namespace ChangeCompany
     [FileLocation(nameof(ChangeCompany))]
     [SettingsUIGroupOrder(GroupProductionBalance, GroupLockCompany, GroupAbout)]
     [SettingsUIShowGroupName(GroupProductionBalance, GroupLockCompany, GroupAbout)]
-    [SettingsUIKeyboardAction(ProductionBalanceActivationKeyActionName)]
+    [SettingsUIKeyboardAction(ProductionBalanceActivationKeyActionName, modifierOptions: ModifierOptions.Allow)]
     public class ModSettings : ModSetting
     {
         // Group constants.

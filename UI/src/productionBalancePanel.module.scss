@@ -3,8 +3,11 @@
     opacity:                    1;
     margin:                     0px;
 
-    // By NOT specifying a panel width and height, they defauilt to "auto",
-    // which automatically adjusts the panel size for font scale and content, as desired.
+    // Adjust the panel width according to font scale.
+    width:                      calc(450rem + 800rem * (var(--fontScale) - 1));
+
+    // By NOT specifying a panel height, it defaults to "auto",
+    // which automatically adjusts the panel height for font scale and content, as desired.
 }
 
 .productionBalancePanelHeader {

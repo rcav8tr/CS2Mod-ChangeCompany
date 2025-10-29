@@ -1,2 +1,1 @@
-﻿- Fix compatibility issue with Advanced Building Control mod.
-- Improve localization handling.
+﻿- Prevent error with game version 1.3.6.

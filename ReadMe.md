@@ -120,6 +120,7 @@ The following statistics are displayed for industrial and for office:
 - Old Resource: the last company to change produced this resource.
 - New Resource: the last company to change now produces this resource.
 - Next Check Date Time: date and time of the next production balance check.
+
 Companies and Standard Deviation require the simulation to run a bit for the values to be calculated and displayed.
 The last change statistics are only since the game was loaded and are displayed only after a production balance is successfully performed.
 
