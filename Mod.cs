@@ -130,8 +130,8 @@ namespace ChangeCompany
                 //    // Exclude assets.
                 //    if (!keyValue.Key.StartsWith("Assets."))
                 //    {
-                //        //if (keyValue.Key.ToLower().Contains("year"))
-                //        if (keyValue.Value == "B")
+                //        if (keyValue.Key.ToLower().Contains("quit"))
+                //        //if (keyValue.Value == "B")
                 //        {
                 //            log.Info(keyValue.Key + "\t" + keyValue.Value);
                 //        }
