@@ -49,7 +49,8 @@ declare module "cs2/l10n" {
   	NetElevation = "netElevation",
   	ScreenFrequency = "screenFrequency",
   	Height = "height",
-  	Custom = "custom"
+  	Custom = "custom",
+  	DurationSeconds = "durationSeconds"
   }
   export enum LocElementType {
   	Bounds = "Game.UI.Localization.LocalizedBounds",

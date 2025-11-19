@@ -118,8 +118,9 @@ namespace ChangeCompany
 
                 // Activate this mod's production balance systems.
                 // Run after the TimeSystem which updates the game date/time.
-                updateSystem.UpdateAfter<ProductionBalanceSystem, TimeSystem>(SystemUpdatePhase.GameSimulation);
-                updateSystem.UpdateAt<ProductionBalanceUISystem>(SystemUpdatePhase.UIUpdate);
+                // Production balance is disabled until it can be fixed for recent game releases.
+                //updateSystem.UpdateAfter<ProductionBalanceSystem, TimeSystem>(SystemUpdatePhase.GameSimulation);
+                //updateSystem.UpdateAt<ProductionBalanceUISystem>(SystemUpdatePhase.UIUpdate);
 
 
 #if DEBUG

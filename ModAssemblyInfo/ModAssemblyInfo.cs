@@ -10,7 +10,7 @@ namespace ChangeCompany
     public class ModAssemblyInfo
     {
         public const string Name        = "ChangeCompany";
-        public const string Version     = "3.0.4";
+        public const string Version     = "3.0.5";
         public const string Title       = "Change Company";
         public const string Description = "Mod with 3 main features: Change Company, Production Balance, and Lock Company.";
     }

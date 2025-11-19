@@ -163,11 +163,11 @@ namespace ChangeCompany
                 if (BufferLookupEmployee.TryGetBuffer(companyEntity, out DynamicBuffer<Employee> companyEmployees))
                 {
                     // Compute building efficiency.
-				    float buildingEfficiency = 1f;
-				    if (BufferLookupEfficiency.TryGetBuffer(propertyEntity, out DynamicBuffer<Efficiency> bufferEfficiency))
-				    {
-					    buildingEfficiency = BuildingUtils.GetEfficiency(bufferEfficiency);
-				    }
+                    float buildingEfficiency = 1f;
+                    if (BufferLookupEfficiency.TryGetBuffer(propertyEntity, out DynamicBuffer<Efficiency> bufferEfficiency))
+                    {
+                        buildingEfficiency = BuildingUtils.GetEfficiency(bufferEfficiency);
+                    }
 
                     // Compute and return the company production.
                     return EconomyUtils.GetCompanyProductionPerDay(
@@ -355,11 +355,11 @@ namespace ChangeCompany
                 _resourcesExtraction = new();
                 _resourcesIndustrial = new();
                 _resourcesOffice     = new();
-		        _componentLookupResourceData = SystemAPI.GetComponentLookup<ResourceData>(true);
+                _componentLookupResourceData = SystemAPI.GetComponentLookup<ResourceData>(true);
                 _resourcePrefabs = _resourceSystem.GetPrefabs();
-			    ResourceIterator resourceIterator = ResourceIterator.GetIterator();
-			    while (resourceIterator.Next())
-			    {
+                ResourceIterator resourceIterator = ResourceIterator.GetIterator();
+                while (resourceIterator.Next())
+                {
                     Resource resource = resourceIterator.resource;
                     if (EconomyUtils.IsExtractorResource(resource))
                     {
@@ -373,7 +373,7 @@ namespace ChangeCompany
                     {
                         _resourcesOffice.Add(resource);
                     }
-			    }
+                }
 
                 // Query to get industrial and office companies.
                 // There is no way to distinguish between industrial and office companies based only on the components they have.
@@ -540,9 +540,9 @@ namespace ChangeCompany
 
                 // Get data and lookups needed to compute company total worth.
                 _resourcePrefabs              = _resourceSystem.GetPrefabs();
-		        _bufferLookupLayoutElement    = SystemAPI.GetBufferLookup   <LayoutElement>(true);
-		        _componentLookupDeliveryTruck = SystemAPI.GetComponentLookup<DeliveryTruck>(true);
-		        _componentLookupResourceData  = SystemAPI.GetComponentLookup<ResourceData >(true);
+                _bufferLookupLayoutElement    = SystemAPI.GetBufferLookup   <LayoutElement>(true);
+                _componentLookupDeliveryTruck = SystemAPI.GetComponentLookup<DeliveryTruck>(true);
+                _componentLookupResourceData  = SystemAPI.GetComponentLookup<ResourceData >(true);
 
                 // Get current game date/time.
                 GameDateTime currentGameDateTime = GetCurrentGameDateTime();
@@ -680,12 +680,19 @@ namespace ChangeCompany
             resourceSurplusesOffice     = new();
             resourceSurplusesAll        = new();
 
+            // It is desired to use the same production/consumption data as the Production tab of the Economy view.
+            // The Production tab data comes from the ProductionUISystem.
+            // But ProductionUISystem updates only 32 times per game day, which is one update every 45 game minutes.
+            // Data is needed at least once per game minute.
+            // TBD TODO
+
+
             // Get production and consumption data.
             // Logic adapted from Game.UI.InGame.ProductionUISystem.UpdateCache().
-		    NativeArray<int> productionData        = _countCompanyDataSystem.GetProduction (out JobHandle jobHandleProductionData);
-		    NativeArray<int> industrialConsumption = _industrialDemandSystem.GetConsumption(out JobHandle jobHandleIndustrialConsumption);
-		    NativeArray<int> commercialConsumption = _commercialDemandSystem.GetConsumption(out JobHandle jobHandleCommercialConsumption);
-		    JobHandle.CompleteAll(ref jobHandleProductionData, ref jobHandleIndustrialConsumption, ref jobHandleCommercialConsumption);
+            NativeArray<int> productionData        = _countCompanyDataSystem.GetProduction (out JobHandle jobHandleProductionData);
+            NativeArray<int> industrialConsumption = _industrialDemandSystem.GetConsumption(out JobHandle jobHandleIndustrialConsumption);
+            NativeArray<int> commercialConsumption = _commercialDemandSystem.GetConsumption(out JobHandle jobHandleCommercialConsumption);
+            JobHandle.CompleteAll(ref jobHandleProductionData, ref jobHandleIndustrialConsumption, ref jobHandleCommercialConsumption);
 
             // Get resource surpluses for industrial.
             foreach (Resource resource in _resourcesIndustrial)
@@ -993,20 +1000,22 @@ namespace ChangeCompany
         /// </summary>
         private int GetCompanyTotalWorth(Entity companyEntity)
         {
-            // Logic adapted from CompanyMoveAwaySystem.CheckMoveAwayJob.
-            if (EntityManager.TryGetBuffer(companyEntity, true, out DynamicBuffer<Resources> resources))
-            {
-                if (EntityManager.TryGetBuffer(companyEntity, true, out DynamicBuffer<OwnedVehicle> ownedVehicles))
-				{
-					return EconomyUtils.GetCompanyTotalWorth(
-                        resources, ownedVehicles, ref _bufferLookupLayoutElement, ref _componentLookupDeliveryTruck, _resourcePrefabs, ref _componentLookupResourceData);
-				}
-				else
-				{
-					return EconomyUtils.GetCompanyTotalWorth(
-                        resources, _resourcePrefabs, ref _componentLookupResourceData);
-				}
-            }
+            // TBD Disable production balance until it can be fixed for recent game releases.
+
+            //// Logic adapted from CompanyMoveAwaySystem.CheckMoveAwayJob.
+            //if (EntityManager.TryGetBuffer(companyEntity, true, out DynamicBuffer<Resources> resources))
+            //{
+            //    if (EntityManager.TryGetBuffer(companyEntity, true, out DynamicBuffer<OwnedVehicle> ownedVehicles))
+            //    {
+            //        return EconomyUtils.GetCompanyTotalWorth(
+            //            resources, ownedVehicles, ref _bufferLookupLayoutElement, ref _componentLookupDeliveryTruck, _resourcePrefabs, ref _componentLookupResourceData);
+            //    }
+            //    else
+            //    {
+            //        return EconomyUtils.GetCompanyTotalWorth(
+            //            resources, _resourcePrefabs, ref _componentLookupResourceData);
+            //    }
+            //}
             return 0;
         }
 

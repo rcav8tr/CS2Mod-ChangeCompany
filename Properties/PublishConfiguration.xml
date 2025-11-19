@@ -17,7 +17,7 @@
 # Main Features
 The **Change Company** mod includes 3 main features:
 - **Change Company**:  Allows you to change the company for a mixed residential, commercial, industrial, storage, or office building.
-- **Production Balance**:  Automatically balances production of industrial and office resources.
+- **Production Balance**:  Automatically balances production of industrial and office resources.  Currently disabled.
 - **Lock Company**:  Allows you to lock companies to prevent them from moving away.
 
 These features are described in the following sections.
@@ -80,6 +80,8 @@ Then use **Change Company** to change the company in that building.
 
 
 # Production Balance - Description
+**Production Balance** is disabled until it can be fixed for recent game releases.
+
 The objective of **Production Balance** is to correct the situation where the city produces surpluses of some resources
 while at the same time has deficits of other resources which have to be imported.
 
@@ -277,8 +279,6 @@ The following mods were used in the development of this mod:
     <Screenshot Value="Properties\Screenshots\40ChangeCompanyOffice.png" />
     <Screenshot Value="Properties\Screenshots\50ChangeCompanyStorage.png" />
     <Screenshot Value="Properties\Screenshots\60LockCompany.png" />
-    <Screenshot Value="Properties\Screenshots\63ProductionBalance.png" />
-    <Screenshot Value="Properties\Screenshots\66ProductionBalanceStatistics.png" />
     <Screenshot Value="Properties\Screenshots\70Options.png" />
 
 
@@ -289,10 +289,10 @@ The following mods were used in the development of this mod:
     <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/change-company.1808488/" />
 
     <!-- Version of the mod.  Copied from assembly Version. -->
-    <ModVersion Value="3.0.4" />
+    <ModVersion Value="3.0.5" />
 
     <!-- Recommended version of the base game to use the mod. -->
-    <GameVersion Value="1.3.6*" />
+    <GameVersion Value="1.4.2*" />
 
     <!-- Dependency for the mod.  Can be set multiple times. -->
     <Dependency Id="" />
@@ -303,7 +303,7 @@ The following mods were used in the development of this mod:
 
     <!-- Change log.  Copied from ChangeLog.md file.  Supports minimal markdown subset. -->
     <ChangeLog>
-- Fix translation error.
+- Disable Production Balance until it can be fixed for recent game releases.
 </ChangeLog>
 
     <!-- External links.  Can be set multiple times. -->

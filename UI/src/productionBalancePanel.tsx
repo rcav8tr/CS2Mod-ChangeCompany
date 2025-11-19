@@ -4,12 +4,12 @@ import { trigger, useValue  } from "cs2/api";
 import { useLocalization    } from "cs2/l10n";
 import { Panel              } from "cs2/ui";
 
-import { ProductionBalanceUISettings, bindingProductionBalanceUISettings    } from "bindings";
-import   mod                                                                  from "../mod.json";
-import { ModuleResolver                                                     } from "moduleResolver";
-import   productionBalanceIcon                                                from "images/productionBalance.svg";
-import   styles                                                               from "productionBalancePanel.module.scss";
-import { ProductionBalancePanelInfo                                         } from "productionBalancePanelInfo";
+import { ProductionBalanceUISettings, bindingProductionBalanceUISettings, bindingActiveLocale, bindingTextScale } from "bindings";
+import   mod                              from "../mod.json";
+import { ModuleResolver                 } from "moduleResolver";
+import   productionBalanceIcon            from "images/productionBalance.svg";
+import   styles                           from "productionBalancePanel.module.scss";
+import { ProductionBalancePanelInfo     } from "productionBalancePanelInfo";
 
 // Panel to display industrial and office production balance infos.
 export const ProductionBalancePanel = () =>
@@ -27,6 +27,35 @@ export const ProductionBalancePanel = () =>
     const { translate } = useLocalization();
     const productionBalanceTitle: string | null = translate(mod.id + ".ProductionBalanceStatistics");
 
+    // Define the panel width for each locale ID so that the panel heading text
+    // and row labels fit without ellipses, wrapping, or too much extra space.
+    // Fixed width is used instead of variable width so that data width does not affect panel width.
+    const panelWidths: Record<string, { small: number, large: number }> = {
+        "en-US":   { small: 350, large: 640 },
+        "de-DE":   { small: 450, large: 860 },
+        "es-ES":   { small: 420, large: 790 },
+        "fr-FR":   { small: 460, large: 870 },
+        "it-IT":   { small: 410, large: 750 },
+        "ja-JP":   { small: 320, large: 590 },
+        "ko-KR":   { small: 340, large: 620 },
+        "pl-PL":   { small: 420, large: 790 },
+        "pt-BR":   { small: 410, large: 770 },
+        "ru-RU":   { small: 540, large: 990 },
+        "zh-HANS": { small: 330, large: 610 },
+        "zh-HANT": { small: 330, large: 610 },
+    };
+
+    // Get the small and large panel widths according to locale ID.
+    const valueActiveLocale: string = useValue(bindingActiveLocale);
+    const panelWidthSmall: number = panelWidths[valueActiveLocale]?.small || 450;
+    const panelWidthLarge: number = panelWidths[valueActiveLocale]?.large || 870;
+
+    // Adjust panel width according to text scale.
+    // Small width is for text scale 1 and large width is for max text scale 1.5.
+    // For text scales between 1 and 1.5, panel widths are linearly interpolated between small and large.
+    const valueTextScale: number = useValue(bindingTextScale);
+    const adjustedPanelWidth: number = panelWidthSmall + (panelWidthLarge - panelWidthSmall) * (valueTextScale - 1) / (1.5 - 1);
+
     // Verify panel position.
     let verifiedPanelPosition = { x: productionBalanceUISettings.panelPositionX, y: productionBalanceUISettings.panelPositionY };
     const panel: HTMLElement | null = document.getElementById(elementIDProductionBalancePanel);
@@ -35,7 +64,7 @@ export const ProductionBalancePanel = () =>
         // Prevent any part of panel from going outside the window.
         const panelRect = panel.getBoundingClientRect();
         verifiedPanelPosition = checkPositionOnWindow(
-            productionBalanceUISettings.panelPositionX, productionBalanceUISettings.panelPositionY, panelRect.width, panelRect.height);
+            productionBalanceUISettings.panelPositionX, productionBalanceUISettings.panelPositionY, adjustedPanelWidth, panelRect.height);
 
         // Check for any chanage in panel position.
         if (verifiedPanelPosition.x != productionBalanceUISettings.panelPositionX ||
@@ -46,11 +75,12 @@ export const ProductionBalancePanel = () =>
         }
     }
 
-    // Set panel to the verified position using a dynamic style.
+    // Set panel to the verified position and adjusted width using a dynamic style.
     const panelStyle: Partial<CSSProperties> =
     {
         left:   verifiedPanelPosition.x + "px",
         top:    verifiedPanelPosition.y + "px",
+        width:  adjustedPanelWidth + "rem",
     }
 
     // Function to join classes.

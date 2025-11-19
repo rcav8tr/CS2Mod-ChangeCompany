@@ -9,7 +9,7 @@
         <!--The file where mod information which is required for publishing mod on PDX mods are stored-->
         <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
         <Title>Change Company</Title>
-        <Version>3.0.4</Version>
+        <Version>3.0.5</Version>
         <Description>Mod with 3 main features: Change Company, Production Balance, and Lock Company.</Description>
         <Copyright>Copyright © 2025</Copyright>
         <TreatWarningsAsErrors>True</TreatWarningsAsErrors>

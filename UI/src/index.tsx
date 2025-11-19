@@ -12,11 +12,14 @@ const register: ModRegistrar = (moduleRegistry) =>
     moduleRegistry.extend("game-ui/game/components/selected-info-panel/selected-info-sections/selected-info-sections.tsx", "selectedInfoSectionComponents", ChangeCompanyComponent)
     moduleRegistry.extend("game-ui/game/components/selected-info-panel/selected-info-sections/selected-info-sections.tsx", "selectedInfoSectionComponents", LockCompanyComponent)
 
+    // TBD
+    // Production balance is disabled until it can be fixed for recent game releases.
+
     // Append production balance button to info view button list in game's top left.
-    moduleRegistry.append("GameTopLeft", ProductionBalanceButton);
+    //moduleRegistry.append("GameTopLeft", ProductionBalanceButton);
 
     // Append production balance panel to the game's main panel.
-    moduleRegistry.append("Game", ProductionBalancePanel);
+    //moduleRegistry.append("Game", ProductionBalancePanel);
 
     // Registration is complete.
     console.log(mod.id + " registration complete.");

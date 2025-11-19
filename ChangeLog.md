@@ -1,1 +1,1 @@
-﻿- Fix translation error.
+﻿- Disable Production Balance until it can be fixed for recent game releases.

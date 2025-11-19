@@ -1,7 +1,7 @@
 ﻿# Main Features
 The **Change Company** mod includes 3 main features:
 - **Change Company**:  Allows you to change the company for a mixed residential, commercial, industrial, storage, or office building.
-- **Production Balance**:  Automatically balances production of industrial and office resources.
+- **Production Balance**:  Automatically balances production of industrial and office resources.  Currently disabled.
 - **Lock Company**:  Allows you to lock companies to prevent them from moving away.
 
 These features are described in the following sections.
@@ -64,6 +64,8 @@ Then use **Change Company** to change the company in that building.
 
 
 # Production Balance - Description
+**Production Balance** is disabled until it can be fixed for recent game releases.
+
 The objective of **Production Balance** is to correct the situation where the city produces surpluses of some resources
 while at the same time has deficits of other resources which have to be imported.
 

@@ -113,12 +113,14 @@ namespace ChangeCompany
             {
                 Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(OnGamePreload)}");
 
-                // Get possible company infos for commercial, industrial, office, and storage company prefabs.
+                // Get possible company infos for commercial, extractor, industrial, office, and storage company prefabs.
                 // At the time OnCreate is called, IndustrialProcessData is not yet initialized.
                 // IndustrialProcessData defines the resource output by a company.
                 // So possible company infos must be obtained after OnCreate.
+                // Company infos for extractor are obtained but used only to dump to log file.
                 GetPossibleCompanyInfos(
                     out _companyInfosCommercial,
+                    out CompanyInfos companyInfosExtractor,
                     out _companyInfosIndustrial,
                     out _companyInfosOffice,
                     out _companyInfosStorage);
@@ -127,6 +129,8 @@ namespace ChangeCompany
                 // Dump possible company infos.
                 //Mod.log.Info("Company infos commercial:");
                 //DumpPossibleCompanyInfos(_companyInfosCommercial);
+                //Mod.log.Info("Company infos extractor:");
+                //DumpPossibleCompanyInfos(companyInfosExtractor);
                 //Mod.log.Info("Company infos industrial:");
                 //DumpPossibleCompanyInfos(_companyInfosIndustrial);
                 //Mod.log.Info("Company infos office:");
@@ -161,16 +165,18 @@ namespace ChangeCompany
         }
 
         /// <summary>
-        /// Get possible company infos for commercial, industrial, office, and storage company prefabs.
+        /// Get possible company infos for commercial, extractor, industrial, office, and storage company prefabs.
         /// </summary>
         private void GetPossibleCompanyInfos(
             out CompanyInfos companyInfosCommercial,
+            out CompanyInfos companyInfosExtractor,
             out CompanyInfos companyInfosIndustrial,
             out CompanyInfos companyInfosOffice,
             out CompanyInfos companyInfosStorage)
         {
             // Create new empty company infos.
             companyInfosCommercial = new();
+            companyInfosExtractor  = new();
             companyInfosIndustrial = new();
             companyInfosOffice     = new();
             companyInfosStorage    = new();
@@ -191,14 +197,24 @@ namespace ChangeCompany
                     ComponentType.ReadOnly<IndustrialProcessData>());
                 List<Entity> companyPrefabsCommercial = companyPrefabQueryCommercial.ToEntityArray(Allocator.Temp).ToList();
 
+                // Get company prefabs for extractor.
+                // Query copied from IndustrialSpawnSystem except include only extractors.
+                EntityQuery companyPrefabQueryExtractor = GetEntityQuery(
+                    ComponentType.ReadOnly<ArchetypeData        >(),
+                    ComponentType.ReadOnly<IndustrialCompanyData>(),
+                    ComponentType.ReadOnly<IndustrialProcessData>(),
+                    ComponentType.ReadOnly<ExtractorCompanyData >(),
+                    ComponentType.Exclude<StorageCompanyData    >());
+                List<Entity> companyPrefabsExtractor = companyPrefabQueryExtractor.ToEntityArray(Allocator.Temp).ToList();
+
                 // Get company prefabs for industrial, which includes office.
                 // Query copied from IndustrialSpawnSystem except exclude extractors.
                 EntityQuery companyPrefabQueryIndustrialOffice = GetEntityQuery(
                     ComponentType.ReadOnly<ArchetypeData        >(),
                     ComponentType.ReadOnly<IndustrialCompanyData>(),
                     ComponentType.ReadOnly<IndustrialProcessData>(),
-                    ComponentType.Exclude<StorageCompanyData    >(),
-                    ComponentType.Exclude<ExtractorCompanyData  >());
+                    ComponentType.Exclude<ExtractorCompanyData  >(),
+                    ComponentType.Exclude<StorageCompanyData    >());
                 List<Entity> companyPrefabsIndustrialOffice = companyPrefabQueryIndustrialOffice.ToEntityArray(Allocator.Temp).ToList();
 
                 // Determine which company prefabs are industrial vs office.
@@ -229,12 +245,14 @@ namespace ChangeCompany
 
                 // Create new company infos from the company prefabs.
                 companyInfosCommercial = new(companyPrefabsCommercial, componentLookupIndustrialProcessData);
+                companyInfosExtractor  = new(companyPrefabsExtractor,  componentLookupIndustrialProcessData);
                 companyInfosIndustrial = new(companyPrefabsIndustrial, componentLookupIndustrialProcessData);
                 companyInfosOffice     = new(companyPrefabsOffice,     componentLookupIndustrialProcessData);
                 companyInfosStorage    = new(companyPrefabsStorage,    componentLookupIndustrialProcessData);
 
                 // Info logging.
                 Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(GetPossibleCompanyInfos)} Company infos for Commercial = {companyInfosCommercial.Count,3}");
+                Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(GetPossibleCompanyInfos)} Company infos for Extractor  = {companyInfosExtractor .Count,3}");
                 Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(GetPossibleCompanyInfos)} Company infos for Industrial = {companyInfosIndustrial.Count,3}");
                 Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(GetPossibleCompanyInfos)} Company infos for Office     = {companyInfosOffice    .Count,3}");
                 Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(GetPossibleCompanyInfos)} Company infos for Storage    = {companyInfosStorage   .Count,3}");

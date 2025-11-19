@@ -39,3 +39,7 @@ export const bindingCompanyLocked                   = bindValue<boolean         
 export const bindingProductionBalanceUISettings     = bindValue<ProductionBalanceUISettings >(mod.id, "ProductionBalanceUISettings");
 export const bindingProductionBalanceInfoIndustrial = bindValue<ProductionBalanceInfo       >(mod.id, "ProductionBalanceInfoIndustrial");
 export const bindingProductionBalanceInfoOffice     = bindValue<ProductionBalanceInfo       >(mod.id, "ProductionBalanceInfoOffice");
+
+// Game bindings.
+export const bindingActiveLocale                    = bindValue<string                      >("app",        "activeLocale",     "en-US");
+export const bindingTextScale                       = bindValue<number                      >("options",    "textScale",        1);
