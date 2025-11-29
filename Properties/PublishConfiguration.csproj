@@ -87,6 +87,9 @@ $([System.IO.File]::ReadAllText('.\ChangeLog.md').TrimEnd())
     <!-- Supported types are discord, github, youtube, twitch, x, paypal, patreon, buymeacoffee, kofi, crowdin, gitlab, gofundme. -->
     <ExternalLink Type="github" Url="https://github.com/rcav8tr/CS2Mod-$(AssemblyName)" />
     <ExternalLink Type="discord" Url="https://discord.com/channels/1024242828114673724/1219579814055514112/threads/1403370143429562461" />
+
+    <!-- Access Control Level.  Supported values: Public, Private, Unlisted -->
+    <AccessLevel Value="Public" />
 </Publish>
                 ]]>
             </GeneratedText>

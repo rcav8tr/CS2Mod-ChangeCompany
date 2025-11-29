@@ -194,6 +194,16 @@ namespace ChangeCompany
                 return;
             }
 
+            // If the company does not have ProcessingCompany, then section is not visible.
+            // The game logic in CompanyMoveAwaySystem.CheckMoveAwayJob acts only on companies with the ProcessingCompany component.
+            // Because companies without ProcessingCompany cannot move away, there is no need for the lock section.
+            // Note that storage companies do not have ProcessingCompany.
+            if (!EntityManager.HasComponent<ProcessingCompany>(_selectedCompanyEntity))
+            {
+                visible = false;
+                return;
+            }
+
             // Section is visible.
             visible = true;
 

@@ -100,17 +100,9 @@ namespace ChangeCompany
         [SettingsUIMultilineText]
         public string ProductionBalanceGeneralDescription => Translation.Get(UITranslationKey.SettingProductionBalanceGeneralDescription);
 
-        // TBD
-        // Disable all production balance settings until it can be fixed for recent game releases.
-        private bool DisableProductionBalance()
-        {
-            return true;
-        }
-
         // Whether or not production balance is enabled, for industrial.
         private bool _productionBalanceEnabledIndustrial;
         [SettingsUISection(GroupProductionBalance)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(DisableProductionBalance))]
         public bool ProductionBalanceEnabledIndustrial
         {
             get { return _productionBalanceEnabledIndustrial; }
@@ -120,7 +112,6 @@ namespace ChangeCompany
         // Whether or not production balance is enabled, for office.
         private bool _productionBalanceEnabledOffice;
         [SettingsUISection(GroupProductionBalance)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(DisableProductionBalance))]
         public bool ProductionBalanceEnabledOffice
         {
             get { return _productionBalanceEnabledOffice; }
@@ -133,7 +124,6 @@ namespace ChangeCompany
         private int _productionBalanceCheckIntervalIndustrial;
         [SettingsUISection(GroupProductionBalance)]
         [SettingsUISlider(min = MinInterval, max = MaxInterval, step = 1f, scalarMultiplier = 1f, unit = Unit.kInteger)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(DisableProductionBalance))]
         public int ProductionBalanceCheckIntervalIndustrial
         {
             get { return _productionBalanceCheckIntervalIndustrial; }
@@ -144,7 +134,6 @@ namespace ChangeCompany
         private int _productionBalanceCheckIntervalOffice;
         [SettingsUISection(GroupProductionBalance)]
         [SettingsUISlider(min = MinInterval, max = MaxInterval, step = 1f, scalarMultiplier = 1f, unit = Unit.kInteger)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(DisableProductionBalance))]
         public int ProductionBalanceCheckIntervalOffice
         {
             get { return _productionBalanceCheckIntervalOffice; }
@@ -154,47 +143,40 @@ namespace ChangeCompany
         // Minimum number of companies to allow production balance, for industrial.
         [SettingsUISection(GroupProductionBalance)]
         [SettingsUISlider(min = 20f, max = 100f, step = 1f, scalarMultiplier = 1f, unit = Unit.kInteger)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(DisableProductionBalance))]
         public int ProductionBalanceMinimumCompaniesIndustrial { get; set; }
 
         // Minimum number of companies to allow production balance, for office.
         [SettingsUISection(GroupProductionBalance)]
         [SettingsUISlider(min = 5f, max = 50f, step = 1f, scalarMultiplier = 1f, unit = Unit.kInteger)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(DisableProductionBalance))]
         public int ProductionBalanceMinimumCompaniesOffice { get; set; }
 
         // Minimum standard deviation percent of surpluses to allow production balance, for industrial.
-        private const float MinStdDev = 30f;
+        private const float MinStdDev = 10f;
         private const float MaxStdDev = 150f;
         [SettingsUISection(GroupProductionBalance)]
         [SettingsUISlider(min = MinStdDev, max = MaxStdDev, step = 1f, scalarMultiplier = 1f, unit = Unit.kPercentage)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(DisableProductionBalance))]
         public int ProductionBalanceMinimumStandardDeviationIndustrial { get; set; }
 
         // Minimum standard deviation percent of surpluses to allow production balance, for office.
         [SettingsUISection(GroupProductionBalance)]
         [SettingsUISlider(min = MinStdDev, max = MaxStdDev, step = 1f, scalarMultiplier = 1f, unit = Unit.kPercentage)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(DisableProductionBalance))]
         public int ProductionBalanceMinimumStandardDeviationOffice { get; set; }
 
         // Maximum production of the company as a percent of the city's production to allow production balance, for industrial.
         private const float MinMaxProd = 20f;
-        private const float MaxMaxProd = 80f;
+        private const float MaxMaxProd = 100f;
         [SettingsUISection(GroupProductionBalance)]
         [SettingsUISlider(min = MinMaxProd, max = MaxMaxProd, step = 1f, scalarMultiplier = 1f, unit = Unit.kPercentage)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(DisableProductionBalance))]
         public int ProductionBalanceMaximumCompanyProductionIndustrial { get; set; }
 
         // Maximum production of the company as a percent of the city's production to allow production balance, for office.
         [SettingsUISection(GroupProductionBalance)]
         [SettingsUISlider(min = MinMaxProd, max = MaxMaxProd, step = 1f, scalarMultiplier = 1f, unit = Unit.kPercentage)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(DisableProductionBalance))]
         public int ProductionBalanceMaximumCompanyProductionOffice { get; set; }
 
         // Whether or not to hide the activation button.
         private bool _productionBalanceHideActivationButton;
         [SettingsUISection(GroupProductionBalance)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(DisableProductionBalance))]
         public bool ProductionBalanceHideActivationButton
         {
             get { return _productionBalanceHideActivationButton; }
@@ -206,7 +188,6 @@ namespace ChangeCompany
         private ProxyBinding _productionBalanceActivationKey;
         [SettingsUIKeyboardBinding(BindingKeyboard.B, ProductionBalanceActivationKeyActionName, ctrl: true, shift: true)]
         [SettingsUISection(GroupProductionBalance)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(DisableProductionBalance))]
         public ProxyBinding ProductionBalanceActivationKey
         {
             get { return _productionBalanceActivationKey; }
@@ -226,7 +207,6 @@ namespace ChangeCompany
         // Button to reset production balance settings.
         [SettingsUIButton()]
         [SettingsUISection(GroupProductionBalance)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(DisableProductionBalance))]
         public bool ProductionBalanceReset
         {
             set { SetDefaultsProductionBalance(); UpdateProductionBalanceUISettingsIfLoaded(); }

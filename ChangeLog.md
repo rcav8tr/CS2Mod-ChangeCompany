@@ -1,1 +1,4 @@
-﻿- Disable Production Balance until it can be fixed for recent game releases.
+﻿- Update Production Balance logic for recent game releases.
+- Update Production Balance panel width to better handle locales and text scales.
+- Prevent locking storage companies because they cannot move away.
+- Fix companies with negative production.

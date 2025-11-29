@@ -15,8 +15,10 @@ namespace ChangeCompany
         private bool        _isIndustrial;
 
         // The production balance info.
-        public bool         InfoValid;
+        public bool         CompanyCountValid;
         public int          CompanyCount;
+
+        public bool         StandardDeviationValid;
         public double       StandardDeviationPercent;
 
         public GameDateTime LastChangeDateTime = new();
@@ -24,6 +26,10 @@ namespace ChangeCompany
         public Resource     LastChangeToResource;
 
         public GameDateTime NextCheckDateTime = new();
+
+        // For testing only.
+        public double       StandardDeviation;
+        public double       AverageProduction;
 
         // Hold a reference to localization manager.
         private static readonly LocalizationManager _localizationManager = GameManager.instance.localizationManager;
@@ -47,8 +53,10 @@ namespace ChangeCompany
             {
                 _isIndustrial               = this._isIndustrial,
 
-                InfoValid                   = this.InfoValid,
+                CompanyCountValid           = this.CompanyCountValid,
                 CompanyCount                = this.CompanyCount,
+
+                StandardDeviationValid      = this.StandardDeviationValid,
                 StandardDeviationPercent    = this.StandardDeviationPercent,
 
                 LastChangeDateTime          = this.LastChangeDateTime.Copy(),
@@ -56,6 +64,10 @@ namespace ChangeCompany
                 LastChangeToResource        = this.LastChangeToResource,
 
                 NextCheckDateTime           = this.NextCheckDateTime.Copy(),
+
+                // For testing only.
+                StandardDeviation           = this.StandardDeviation,
+                AverageProduction           = this.AverageProduction,
             };
         }
 
@@ -69,7 +81,9 @@ namespace ChangeCompany
 
             // Format company count.
             const string CompanyCountFormat = "N0";
-            string formattedCompanyCount = InfoValid ? CompanyCount.ToString(CompanyCountFormat, currentCulture) : "";
+            string formattedCompanyCount = CompanyCountValid ?
+                CompanyCount.ToString(CompanyCountFormat, currentCulture) :
+                Translation.Get("EconomyPanel.NO_PRODUCTION_DATA");
 
             // Format minimum companies.
             string formattedMinimumCompanies = _isIndustrial ?
@@ -78,9 +92,10 @@ namespace ChangeCompany
 
             // Format standard deviation percent.
             // All languages use same percent symbol.
-            string standardDeviationPercentFormat = InfoValid && StandardDeviationPercent < 200d ? "N1" : "N0";
-            string formattedStandardDeviation = InfoValid ?
-                StandardDeviationPercent.ToString(standardDeviationPercentFormat, currentCulture) + " %" : "";
+            string standardDeviationPercentFormat = StandardDeviationValid && StandardDeviationPercent < 200d ? "N1" : "N0";
+            string formattedStandardDeviation = StandardDeviationValid ?
+                StandardDeviationPercent.ToString(standardDeviationPercentFormat, currentCulture) + " %" :
+                Translation.Get("EconomyPanel.NO_PRODUCTION_DATA");
 
             // Format minimum standard deviation percent.
             // All languages use same percent symbol.
@@ -115,6 +130,12 @@ namespace ChangeCompany
             // Write formatted next check date/time.
             writer.PropertyName("nextCheckDateTime");
             writer.Write(NextCheckDateTime.FormatForUI());
+
+            // Write testing info.
+            writer.PropertyName("standardDeviation");
+            writer.Write(StandardDeviation);
+            writer.PropertyName("averageProduction");
+            writer.Write(AverageProduction);
 
             // End type.
 			writer.TypeEnd();

@@ -27,6 +27,10 @@ export type ProductionBalanceInfo =
     lastChangeToResource:       string;
 
     nextCheckDateTime:          string;
+
+    // For testing only.
+    standardDeviation:          number;
+    averageProduction:          number;
 }
 
 // Define binding for selected company.

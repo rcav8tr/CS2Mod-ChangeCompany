@@ -46,6 +46,9 @@ namespace ChangeCompany
 
                 // Initialize translations.
                 Translation.Initialize();
+                
+                // Initialize production and surplus.
+                ProductionSurplus.Initialize();
 
                 // Add mod UI images directory to UI resource handler.
                 // When the URI is used to access an image, the game forces the URI portion to lower case.
@@ -118,10 +121,8 @@ namespace ChangeCompany
 
                 // Activate this mod's production balance systems.
                 // Run after the TimeSystem which updates the game date/time.
-                // Production balance is disabled until it can be fixed for recent game releases.
-                //updateSystem.UpdateAfter<ProductionBalanceSystem, TimeSystem>(SystemUpdatePhase.GameSimulation);
-                //updateSystem.UpdateAt<ProductionBalanceUISystem>(SystemUpdatePhase.UIUpdate);
-
+                updateSystem.UpdateAfter<ProductionBalanceSystem, TimeSystem>(SystemUpdatePhase.GameSimulation);
+                updateSystem.UpdateAt<ProductionBalanceUISystem>(SystemUpdatePhase.UIUpdate);
 
 #if DEBUG
                 // Get localized text from the game where the value is or contains specific text.
@@ -131,8 +132,8 @@ namespace ChangeCompany
                 //    // Exclude assets.
                 //    if (!keyValue.Key.StartsWith("Assets."))
                 //    {
-                //        if (keyValue.Key.ToLower().Contains("quit"))
-                //        //if (keyValue.Value == "B")
+                //        if (keyValue.Value.ToLower().Contains("no data"))
+                //        //if (keyValue.Value.ToLower() == "no data")
                 //        {
                 //            log.Info(keyValue.Key + "\t" + keyValue.Value);
                 //        }

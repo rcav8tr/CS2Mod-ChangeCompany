@@ -2,7 +2,6 @@
 using Game;
 using Game.Agents;
 using Game.Buildings;
-using Game.Citizens;
 using Game.Common;
 using Game.Companies;
 using Game.Economy;
@@ -16,7 +15,6 @@ using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
 using UnityEngine.Scripting;
 using DeliveryTruck    = Game.Vehicles. DeliveryTruck;
@@ -47,28 +45,7 @@ namespace ChangeCompany
         /// <summary>
         /// List of company details.
         /// </summary>
-        private class CompanyDetails : List<CompanyDetail>
-        {
-            /// <summary>
-            /// Compute average production.
-            /// </summary>
-            public double AverageProduction()
-            {
-                // Check for no companies.
-                if (Count == 0)
-                {
-                    return 0d;
-                }
-
-                // Compute average.
-                int totalProduction = 0;
-                foreach (CompanyDetail companyDetail in this)
-                {
-                    totalProduction += companyDetail.CompanyProduction;
-                }
-                return (double)totalProduction / Count;
-            }
-        }
+        private class CompanyDetails : List<CompanyDetail> { }
 
         /// <summary>
         /// Job to get the company details needed to do production balance.
@@ -83,19 +60,13 @@ namespace ChangeCompany
             [ReadOnly] public ComponentTypeHandle<PrefabRef             > ComponentTypeHandlePrefabRef;
             [ReadOnly] public ComponentTypeHandle<PropertyRenter        > ComponentTypeHandlePropertyRenter;
 
-            // Buffer lookups.
-            [ReadOnly] public BufferLookup<Efficiency                   > BufferLookupEfficiency;
-            [ReadOnly] public BufferLookup<Employee                     > BufferLookupEmployee;
-
             // Component lookups.
-            [ReadOnly] public ComponentLookup<Citizen                   > ComponentLookupCitizen;
             [ReadOnly] public ComponentLookup<IndustrialProcessData     > ComponentLookupIndustrialProcessData;
             [ReadOnly] public ComponentLookup<PrefabRef                 > ComponentLookupPrefabRef;
-            [ReadOnly] public ComponentLookup<ResourceData              > ComponentLookupResourceData;
 
-            // Other data.
-            [ReadOnly] public EconomyParameterData                      EconomyParameters;
-            [ReadOnly] public ResourcePrefabs                           ResourcePrefabs;
+            // Resource flags for industrial and office.
+            [ReadOnly] public Resource                                  ResourcesIndustrial;
+            [ReadOnly] public Resource                                  ResourcesOffice;
 
             // Arrays of lists to return industrial and office company details to OnUpdate.
             // The outer array is one for each possible thread.
@@ -109,6 +80,9 @@ namespace ChangeCompany
             /// </summary>
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
+                // Get thread index once.
+                int threadIndex = JobsUtility.ThreadIndex;
+
                 // Get arrays of query data from the chunk.
                 NativeArray<Entity        > companyEntities        = chunk.GetNativeArray(EntityTypeHandle);
                 NativeArray<PrefabRef     > companyPrefabRefs      = chunk.GetNativeArray(ref ComponentTypeHandlePrefabRef);
@@ -127,11 +101,12 @@ namespace ChangeCompany
                         ComponentLookupIndustrialProcessData.TryGetComponent(companyPrefab, out IndustrialProcessData companyIndustrialProcessData))
                     {
                         // Create a new company detail to add.
+                        // Company production gets set later.
                         CompanyDetail companyDetail = new()
                             {
                                 CompanyEntity = companyEntity,
                                 CompanyPrefab = companyPrefab,
-                                CompanyProduction = GetCompanyProduction(companyEntity, companyIndustrialProcessData, propertyEntity),
+                                CompanyProduction = 0,
                                 PropertyEntity = propertyEntity,
                                 PropertyPrefab = propertyPrefabRef.m_Prefab,
                             };
@@ -140,49 +115,16 @@ namespace ChangeCompany
                         // Add an entry of company detail for this thread.
                         // By having a separate entry for each thread, parallel threads will never access the same inner list at the same time.
                         Resource companyOutputResource = companyIndustrialProcessData.m_Output.m_Resource;
-                        if (EconomyUtils.IsIndustrialResource(ComponentLookupResourceData[ResourcePrefabs[companyOutputResource]], false, false))
+                        if ((companyOutputResource & ResourcesIndustrial) != 0)
                         {
-                            CompanyDetailsIndustrial[JobsUtility.ThreadIndex].Add(in companyDetail);
+                            CompanyDetailsIndustrial[threadIndex].Add(in companyDetail);
                         }
-                        else if (EconomyUtils.IsOfficeResource(companyOutputResource))
+                        else if ((companyOutputResource & ResourcesOffice) != 0)
                         {
-                            CompanyDetailsOffice[JobsUtility.ThreadIndex].Add(in companyDetail);
+                            CompanyDetailsOffice[threadIndex].Add(in companyDetail);
                         }
                     }
                 }
-            }
-
-            /// <summary>
-            /// Get company production.
-            /// </summary>
-            private int GetCompanyProduction(Entity companyEntity, IndustrialProcessData companyIndustrialProcessData, Entity propertyEntity)
-            {
-                // Logic adapted from CountCompanyDataSystem.CountCompanyDataJob for computing Production.
-
-                // Get company's employee buffer.
-                if (BufferLookupEmployee.TryGetBuffer(companyEntity, out DynamicBuffer<Employee> companyEmployees))
-                {
-                    // Compute building efficiency.
-                    float buildingEfficiency = 1f;
-                    if (BufferLookupEfficiency.TryGetBuffer(propertyEntity, out DynamicBuffer<Efficiency> bufferEfficiency))
-                    {
-                        buildingEfficiency = BuildingUtils.GetEfficiency(bufferEfficiency);
-                    }
-
-                    // Compute and return the company production.
-                    return EconomyUtils.GetCompanyProductionPerDay(
-                        buildingEfficiency,
-                        true,
-                        companyEmployees,
-                        companyIndustrialProcessData,
-                        ResourcePrefabs,
-                        ref ComponentLookupResourceData,
-                        ref ComponentLookupCitizen,
-                        ref EconomyParameters);
-                }
-
-                // This should never happen because a company should always have an employee buffer.
-                return 0;
             }
         }
 
@@ -217,8 +159,8 @@ namespace ChangeCompany
                     return 0d;
                 }
                 
-                // Compute average.
-                int total = 0;
+                // Compute average surplus.
+                long total = 0L;
                 for (int i = 0; i < Count; i++)  
                 {
                     total += this[i].Surplus;
@@ -233,6 +175,26 @@ namespace ChangeCompany
                     sumOfSquaredDifferences += difference * difference;
                 } 
                 return Math.Sqrt(sumOfSquaredDifferences / Count);
+            }
+
+            // Compute average production.
+            public double AverageProduction()
+            {
+                // Check for no resources.
+                if (Count == 0)
+                {
+                    return 0d;
+                }
+                
+                // Cmopute total.
+                long total = 0L;
+                for(int i = 0; i < Count; i++)
+                {
+                    total += this[i].Production;
+                }
+
+                // Return average.
+                return (double)total / Count;
             }
         }
 
@@ -269,16 +231,55 @@ namespace ChangeCompany
         // Other systems.
         private ChangeCompanySection    _changeCompanySection;
         private ChangeCompanySystem     _changeCompanySystem;
-        private TimeSystem              _timeSystem;
         private ResourceSystem          _resourceSystem;
-        private CountCompanyDataSystem  _countCompanyDataSystem;    // Update interval = 16, Update offset = 1
-        private IndustrialDemandSystem  _industrialDemandSystem;    // Update interval = 16, Update offset = 7
-        private CommercialDemandSystem  _commercialDemandSystem;    // Update interval = 16, Update offset = 4
+        private TimeSystem              _timeSystem;
 
         // Define resources for extraction, industrial, and office.
-        private List<Resource> _resourcesExtraction;
-        private List<Resource> _resourcesIndustrial;
-        private List<Resource> _resourcesOffice;
+        private static readonly List<Resource> _resourcesExtraction = new()
+        {
+            Resource.Wood,
+            Resource.Grain,
+            Resource.Livestock,
+            Resource.Fish,
+            Resource.Vegetables,
+            Resource.Cotton,
+            Resource.Oil,
+            Resource.Ore,
+            Resource.Coal,
+            Resource.Stone,
+        };
+        private static readonly List<Resource> _resourcesIndustrial = new()
+        {
+            Resource.Metals,
+            Resource.Steel,
+            Resource.Minerals,
+            Resource.Concrete,
+            Resource.Machinery,
+            Resource.Petrochemicals,
+            Resource.Chemicals,
+            Resource.Plastics,
+            Resource.Pharmaceuticals,
+            Resource.Electronics,
+            Resource.Vehicles,
+            Resource.Beverages,
+            Resource.ConvenienceFood,
+            Resource.Food,
+            Resource.Textiles,
+            Resource.Timber,
+            Resource.Paper,
+            Resource.Furniture,
+        };
+        private static readonly List<Resource> _resourcesOffice = new()
+        {
+            Resource.Software,
+            Resource.Telecom,
+            Resource.Financial,
+            Resource.Media,
+        };
+
+        // Define resource flags for industrial and office.
+        private Resource ResourceFlagsIndustrial;
+        private Resource ResourceFlagsOffice;
 
         // Entity queries.
         private EntityQuery _queryCompanies;
@@ -293,13 +294,13 @@ namespace ChangeCompany
         // Flags to enable OnUpdate to run.
         private bool _inGame;           // Whether or not application is in a game (i.e. as opposed to main menu, editor, etc.).
         private bool _initialized;      // Whether or not this system is initialized.
-        private int _onUpdateCounter;
 
         // Data and lookups for computing information about a company.
-        private ResourcePrefabs                 _resourcePrefabs;
-        private BufferLookup<LayoutElement>     _bufferLookupLayoutElement;
-        private ComponentLookup<DeliveryTruck>  _componentLookupDeliveryTruck;
-        private ComponentLookup<ResourceData>   _componentLookupResourceData;
+        private ResourcePrefabs                     _resourcePrefabs;
+        private BufferLookup<LayoutElement>         _bufferLookupLayoutElement;
+        private ComponentLookup<DeliveryTruck>      _componentLookupDeliveryTruck;
+        private ComponentLookup<ResourceData>       _componentLookupResourceData;
+        private ComponentLookup<ServiceAvailable>   _componentLookupServiceAvailable;
 
         // Production balance info.
         private ProductionBalanceInfo _productionBalanceInfoIndustrial = new(true);
@@ -314,19 +315,15 @@ namespace ChangeCompany
         private static readonly object _productionBalanceNextCheckLockOffice     = new();
 
         /// <summary>
-        /// Set update interval same as game systems from which data is obtained.
+        /// Set update interval.
         /// </summary>
         public override int GetUpdateInterval(SystemUpdatePhase phase)
         {
-            return 16;
-        }
-
-        /// <summary>
-        /// Set update offset to be after game systems from which data is obtained.
-        /// </summary>
-        public override int GetUpdateOffset(SystemUpdatePhase phase)
-        {
-            return 10;
+            // System needs to run at least once every game minute because that is the highest frequency that user can choose in settings.
+            // There are 262144 simulation ticks per game day.
+            // There are 262144 / (24 * 60) = 182.044 sim ticks per game minute.
+            // Interval is power of 2 less than that.
+            return 128;
         }
 
         /// <summary>
@@ -342,38 +339,14 @@ namespace ChangeCompany
             try
             {
                 // Get other systems.
-                _changeCompanySection   = World.GetOrCreateSystemManaged<ChangeCompanySection   >();
-                _changeCompanySystem    = World.GetOrCreateSystemManaged<ChangeCompanySystem    >();
-                _timeSystem             = World.GetOrCreateSystemManaged<TimeSystem             >();
-                _resourceSystem         = World.GetOrCreateSystemManaged<ResourceSystem         >();
-                _countCompanyDataSystem = World.GetOrCreateSystemManaged<CountCompanyDataSystem >();
-                _industrialDemandSystem = World.GetOrCreateSystemManaged<IndustrialDemandSystem >();
-                _commercialDemandSystem = World.GetOrCreateSystemManaged<CommercialDemandSystem >();
+                _changeCompanySection = World.GetOrCreateSystemManaged<ChangeCompanySection>();
+                _changeCompanySystem  = World.GetOrCreateSystemManaged<ChangeCompanySystem >();
+                _resourceSystem       = World.GetOrCreateSystemManaged<ResourceSystem      >();
+                _timeSystem           = World.GetOrCreateSystemManaged<TimeSystem          >();
 
-                // Define extraction, industrial, and office resources.
-                // This system does not care about the resource order.
-                _resourcesExtraction = new();
-                _resourcesIndustrial = new();
-                _resourcesOffice     = new();
-                _componentLookupResourceData = SystemAPI.GetComponentLookup<ResourceData>(true);
-                _resourcePrefabs = _resourceSystem.GetPrefabs();
-                ResourceIterator resourceIterator = ResourceIterator.GetIterator();
-                while (resourceIterator.Next())
-                {
-                    Resource resource = resourceIterator.resource;
-                    if (EconomyUtils.IsExtractorResource(resource))
-                    {
-                        _resourcesExtraction.Add(resource);
-                    }
-                    if (EconomyUtils.IsIndustrialResource(_componentLookupResourceData[_resourcePrefabs[resource]], false, false))
-                    {
-                        _resourcesIndustrial.Add(resource);
-                    }
-                    if (EconomyUtils.IsOfficeResource(resource))
-                    {
-                        _resourcesOffice.Add(resource);
-                    }
-                }
+                // Initialize resource flags for industrial and office;
+                foreach (Resource resource in _resourcesIndustrial) { ResourceFlagsIndustrial |= resource; }
+                foreach (Resource resource in _resourcesOffice    ) { ResourceFlagsOffice     |= resource; }
 
                 // Query to get industrial and office companies.
                 // There is no way to distinguish between industrial and office companies based only on the components they have.
@@ -471,15 +444,13 @@ namespace ChangeCompany
                 _productionBalanceInfoIndustrial = new(true);
                 _productionBalanceInfoOffice     = new(false);
 
+                // In a game.
+                // Needs to be set before balance next checks.
+                _inGame = true;
+
                 // Initialize production balance next check.
                 SetProductionBalanceNextCheckIndustrial();
                 SetProductionBalanceNextCheckOffice();
-
-                // Initialize OnUpdate counter.
-                _onUpdateCounter = 0;
-
-                // In a game.  Set this last because this allows OnUpdate to run and everything else should be initialized before then.
-                _inGame = true;
             }
             else
             {
@@ -509,40 +480,25 @@ namespace ChangeCompany
 
             try
             {
-                // Delay running this mod's OnUpdate.
-                // This delay allows game systems to initialize data that this mod depends on.
-                // Without the delay, initial game data is bad.
-                const int FirstRunCount = 3;
-                _onUpdateCounter++;
-                if (_onUpdateCounter < FirstRunCount)
-                {
-                    return;
-                }
-
-                // Initialize production balance next check, but only once after initial delay.
-                if (_onUpdateCounter == FirstRunCount)
-                {
-                    SetProductionBalanceNextCheckIndustrial();
-                    SetProductionBalanceNextCheckOffice();
-                    return;
-                }
+                // Get resource surpluses for industrial, office, and all.
+                bool resourceSurplusesValid = GetResourceSurpluses(
+                    out ResourceSurpluses resourceSurplusesIndustrial,
+                    out ResourceSurpluses resourceSurplusesOffice,
+                    out ResourceSurpluses resourceSurplusesAll,
+                    out Dictionary<Entity, int> companyProductions);
 
                 // Get company details for industrial and office.
                 GetCompanyDetails(
+                    companyProductions,
                     out CompanyDetails companyDetailsIndustrial,
                     out CompanyDetails companyDetailsOffice);
 
-                // Get resource surpluses for industrial, office, and all.
-                GetResourceSurpluses(
-                    out ResourceSurpluses resourceSurplusesIndustrial,
-                    out ResourceSurpluses resourceSurplusesOffice,
-                    out ResourceSurpluses resourceSurplusesAll);
-
                 // Get data and lookups needed to compute company total worth.
-                _resourcePrefabs              = _resourceSystem.GetPrefabs();
-                _bufferLookupLayoutElement    = SystemAPI.GetBufferLookup   <LayoutElement>(true);
-                _componentLookupDeliveryTruck = SystemAPI.GetComponentLookup<DeliveryTruck>(true);
-                _componentLookupResourceData  = SystemAPI.GetComponentLookup<ResourceData >(true);
+                _resourcePrefabs                 = _resourceSystem.GetPrefabs();
+                _bufferLookupLayoutElement       = SystemAPI.GetBufferLookup   <LayoutElement   >(true);
+                _componentLookupDeliveryTruck    = SystemAPI.GetComponentLookup<DeliveryTruck   >(true);
+                _componentLookupResourceData     = SystemAPI.GetComponentLookup<ResourceData    >(true);
+                _componentLookupServiceAvailable = SystemAPI.GetComponentLookup<ServiceAvailable>(true);
 
                 // Get current game date/time.
                 GameDateTime currentGameDateTime = GetCurrentGameDateTime();
@@ -559,6 +515,7 @@ namespace ChangeCompany
                     _productionBalanceNextCheckLockIndustrial,
                     resourceSurplusesIndustrial,
                     resourceSurplusesAll,
+                    resourceSurplusesValid,
                     companyDetailsIndustrial,
                     _productionBalanceInfoIndustrial,
                     _productionBalanceInfoLockIndustrial);
@@ -575,6 +532,7 @@ namespace ChangeCompany
                     _productionBalanceNextCheckLockOffice,
                     resourceSurplusesOffice,
                     resourceSurplusesAll,
+                    resourceSurplusesValid,
                     companyDetailsOffice,
                     _productionBalanceInfoOffice,
                     _productionBalanceInfoLockOffice);
@@ -588,7 +546,10 @@ namespace ChangeCompany
         /// <summary>
         /// Get details for industrial and office companies.
         /// </summary>
-        private void GetCompanyDetails(out CompanyDetails companyDetailsIndustrial, out CompanyDetails companyDetailsOffice)
+        private void GetCompanyDetails(
+            Dictionary<Entity, int> companyProductions,
+            out CompanyDetails companyDetailsIndustrial,
+            out CompanyDetails companyDetailsOffice)
         {
             // Clear company detail lists.
             // When a NativeList is cleared, capacity remains the same.
@@ -611,16 +572,11 @@ namespace ChangeCompany
                 ComponentTypeHandlePrefabRef            = SystemAPI.GetComponentTypeHandle  <PrefabRef              >(true),
                 ComponentTypeHandlePropertyRenter       = SystemAPI.GetComponentTypeHandle  <PropertyRenter         >(true),
 
-                BufferLookupEfficiency                  = SystemAPI.GetBufferLookup         <Efficiency             >(true),
-                BufferLookupEmployee                    = SystemAPI.GetBufferLookup         <Employee               >(true),
-
-                ComponentLookupCitizen                  = SystemAPI.GetComponentLookup      <Citizen                >(true),
                 ComponentLookupIndustrialProcessData    = SystemAPI.GetComponentLookup      <IndustrialProcessData  >(true),
                 ComponentLookupPrefabRef                = SystemAPI.GetComponentLookup      <PrefabRef              >(true),
-                ComponentLookupResourceData             = SystemAPI.GetComponentLookup      <ResourceData           >(true),
 
-                EconomyParameters                       = _queryEconomyParameterData.GetSingleton<EconomyParameterData>(),
-                ResourcePrefabs                         = _resourceSystem.GetPrefabs(),
+                ResourcesIndustrial                     = ResourceFlagsIndustrial,
+                ResourcesOffice                         = ResourceFlagsOffice,
 
                 CompanyDetailsIndustrial                = _companyDetailsJobIndustrial,
                 CompanyDetailsOffice                    = _companyDetailsJobOffice,
@@ -629,36 +585,61 @@ namespace ChangeCompany
             // Schedule the job to get company details.
             // Execute the job in parallel (i.e. job uses multiple threads, if available).
             // Parallel threads execute much faster than a single thread.
-            JobHandle jobHandleGetCompanyDetails = JobChunkExtensions.ScheduleParallel(getCompanyDetailsJob, _queryCompanies, base.Dependency);
-
-            // Prevent the company details job from running again until it is complete.
-            base.Dependency = jobHandleGetCompanyDetails;
+            base.Dependency = JobChunkExtensions.ScheduleParallel(getCompanyDetailsJob, _queryCompanies, base.Dependency);
 
             // Wait for the company details job to complete before accessing the company details.
-            jobHandleGetCompanyDetails.Complete();
+            base.Dependency.Complete();
 
-            // Consolidate and return company details from the job.
-            companyDetailsIndustrial = ConsolidateCompanyDetailsFromJob(in _companyDetailsJobIndustrial);
-            companyDetailsOffice     = ConsolidateCompanyDetailsFromJob(in _companyDetailsJobOffice);
+            // Consolidate and return company details.
+            companyDetailsIndustrial = ConsolidateCompanyDetails(in _companyDetailsJobIndustrial, companyProductions);
+            companyDetailsOffice     = ConsolidateCompanyDetails(in _companyDetailsJobOffice,     companyProductions);
         }
 
         /// <summary>
         /// Consolidate company details from the company details that were obtained form the job.
         /// </summary>
-        private CompanyDetails ConsolidateCompanyDetailsFromJob(in NativeArray<NativeList<CompanyDetail>> companyDetailsJob)
+        private CompanyDetails ConsolidateCompanyDetails(
+            in NativeArray<NativeList<CompanyDetail>> companyDetailsJob,
+            Dictionary<Entity, int> companyProductions)
         {
             // Do each thread entry in the outer array.
             CompanyDetails consolidatedCompanyDetails = new();
             foreach (NativeList<CompanyDetail> companyDetailsJobList in companyDetailsJob)
             {
                 // Do each company detail entry in the inner list.
-                foreach (CompanyDetail companyDetailJob in companyDetailsJobList)
+                for (int i = 0; i < companyDetailsJobList.Length; i++)
                 {
                     // The company must be able to change.
                     // Need to check this here because class ChangeCompanySection cannot be referenced
                     // in the burst compiled job that gets the company details.
+                    CompanyDetail companyDetailJob = companyDetailsJobList[i];
                     if (_changeCompanySection.CompanyCanChange(companyDetailJob.PropertyEntity, companyDetailJob.PropertyPrefab))
                     {
+                        // Update production amount for this company detail.
+                        if (companyProductions.TryGetValue(companyDetailJob.CompanyEntity, out int companyProduction))
+                        {
+                            companyDetailJob.CompanyProduction = companyProduction;
+
+                            // Company production should never be negative.
+                            // It is unknown for certain how company production gets to be negative.
+                            // Suspicion is that stored resources somehow exceed the storage limit.
+                            // But if production is negative, it seems to remain negative forever.
+                            // Negative production adversely impacts the production balance calculations.
+                            // If company production is negative, then change company to same to correct the problem.
+                            if (companyProduction < 0)
+                            {
+                                _changeCompanySystem.ChangeCompany(new ChangeCompanyData
+                                {
+                                    RequestType      = RequestType.ChangeOneToSpecified,
+                                    NewCompanyPrefab = companyDetailJob.CompanyPrefab,
+                                    PropertyEntity   = companyDetailJob.PropertyEntity,
+                                    PropertyPrefab   = companyDetailJob.PropertyPrefab,
+                                    PropertyType     = _changeCompanySection.GetPropertyType(companyDetailJob.PropertyEntity)
+                                });
+                            }
+                        }
+
+
                         // Include this company detail from the job.
                         consolidatedCompanyDetails.Add(companyDetailJob);
                     }
@@ -670,10 +651,11 @@ namespace ChangeCompany
         /// <summary>
         /// Get surplus amounts by resource for industrial, office, and all.
         /// </summary>
-        private void GetResourceSurpluses(
+        private bool GetResourceSurpluses(
             out ResourceSurpluses resourceSurplusesIndustrial,
             out ResourceSurpluses resourceSurplusesOffice,
-            out ResourceSurpluses resourceSurplusesAll)
+            out ResourceSurpluses resourceSurplusesAll,
+            out Dictionary<Entity, int> companyProductions)
         {
             // Initialize returns.
             resourceSurplusesIndustrial = new();
@@ -683,34 +665,29 @@ namespace ChangeCompany
             // It is desired to use the same production/consumption data as the Production tab of the Economy view.
             // The Production tab data comes from the ProductionUISystem.
             // But ProductionUISystem updates only 32 times per game day, which is one update every 45 game minutes.
-            // Data is needed at least once per game minute.
-            // TBD TODO
-
-
-            // Get production and consumption data.
-            // Logic adapted from Game.UI.InGame.ProductionUISystem.UpdateCache().
-            NativeArray<int> productionData        = _countCompanyDataSystem.GetProduction (out JobHandle jobHandleProductionData);
-            NativeArray<int> industrialConsumption = _industrialDemandSystem.GetConsumption(out JobHandle jobHandleIndustrialConsumption);
-            NativeArray<int> commercialConsumption = _commercialDemandSystem.GetConsumption(out JobHandle jobHandleCommercialConsumption);
-            JobHandle.CompleteAll(ref jobHandleProductionData, ref jobHandleIndustrialConsumption, ref jobHandleCommercialConsumption);
+            // Get production and surplus amounts now.
+            if (!ProductionSurplus.GetAmounts(out int[] productionAmounts, out int[] surplusAmounts, out companyProductions))
+            {
+                return false;
+            }
 
             // Get resource surpluses for industrial.
             foreach (Resource resource in _resourcesIndustrial)
             {
-                resourceSurplusesIndustrial.Add(GetResourceSurplus(resource, in productionData, in industrialConsumption, in commercialConsumption));
+                resourceSurplusesIndustrial.Add(GetResourceSurplus(resource, productionAmounts, surplusAmounts));
             }
 
             // Get resource surpluses for office.
             foreach (Resource resource in _resourcesOffice)
             {
-                resourceSurplusesOffice.Add(GetResourceSurplus(resource, in productionData, in industrialConsumption, in commercialConsumption));
+                resourceSurplusesOffice.Add(GetResourceSurplus(resource, productionAmounts, surplusAmounts));
             }
 
-            // Get resource surpluses for All.
+            // Get resource surpluses for all.
             // Extraction is included in All, even though extraction is not returned by itself.
             foreach (Resource resource in _resourcesExtraction)
             {
-                resourceSurplusesAll.Add(GetResourceSurplus(resource, in productionData, in industrialConsumption, in commercialConsumption));
+                resourceSurplusesAll.Add(GetResourceSurplus(resource, productionAmounts, surplusAmounts));
             }
             resourceSurplusesAll.AddRange(resourceSurplusesIndustrial);
             resourceSurplusesAll.AddRange(resourceSurplusesOffice);
@@ -719,27 +696,24 @@ namespace ChangeCompany
             resourceSurplusesIndustrial.Sort();
             resourceSurplusesOffice    .Sort();
             resourceSurplusesAll       .Sort();
+
+            // Success
+            return true;
         }
 
         /// <summary>
         /// Get the surplus amount for a resource.
         /// </summary>
-        private ResourceSurplus GetResourceSurplus(
-            Resource resource,
-            in NativeArray<int> productionData,
-            in NativeArray<int> industrialConsumption,
-            in NativeArray<int> commercialConsumption)
+        private ResourceSurplus GetResourceSurplus(Resource resource, int[] productionAmounts, int[] surplusAmounts)
         {
-            // Compute production and consumption.
-            // Logic adapted from Game.UI.InGame.ProductionUISystem.GetData().
+            // Return the resource production and surplus amounts.
             int resourceIndex = EconomyUtils.GetResourceIndex(resource);
-            int production = productionData[resourceIndex];
-            int consumption = commercialConsumption[resourceIndex] + industrialConsumption[resourceIndex];
-
-            // Return the resource surplus and production amounts.
-            // Surplus is production minus consumption.
-            // Deficit is a negative surplus.
-            return new() { Resource = resource, Surplus = production - consumption, Production = production };
+            return new()
+            {
+                Resource   = resource,
+                Production = productionAmounts[resourceIndex],
+                Surplus    = surplusAmounts   [resourceIndex],
+            };
         }
 
         /// <summary>
@@ -756,31 +730,33 @@ namespace ChangeCompany
             object productionBalanceNextCheckLock,
             ResourceSurpluses resourceSurpluses,
             ResourceSurpluses resourceSurplusesAll,
+            bool resourceSurplusesValid,
             CompanyDetails companyDetails,
             ProductionBalanceInfo productionBalanceInfo,
             object productionBalanceInfoLock)
         {
+            // Get standard deviation and average production of resource surpluses.
+            double standardDeviation = resourceSurpluses.StandardDeviation();
+            double averageProduction = resourceSurpluses.AverageProduction();
+
             // Compute standard deviation of resource surpluses as a percent of average company production.
             double standardDeviationPercent = 0d;
-            double averageProduction = companyDetails.AverageProduction();
             if (averageProduction > 0d)
             {
-                standardDeviationPercent = 100d * resourceSurpluses.StandardDeviation() / averageProduction;
-                const double MaxStandardDeviationPercent = 999999d;
-                if (standardDeviationPercent > MaxStandardDeviationPercent)
-                {
-                    standardDeviationPercent = MaxStandardDeviationPercent;
-                }
+                standardDeviationPercent = Math.Min(100d * standardDeviation / averageProduction, 999999d);
             }
 
             // Lock thread while writing production balance info.
             lock (productionBalanceInfoLock)
             {
                 // Production balance info is computed and written even if production balance is disabled.
-                // This allows the UI to display the info even when production balance is disabled.
-                productionBalanceInfo.InfoValid = true;
+                // This allows the UI to display the info even when production balance is disabled or it is not yet time to do production balance.
+                productionBalanceInfo.CompanyCountValid = true;
                 productionBalanceInfo.CompanyCount = companyDetails.Count;
+                productionBalanceInfo.StandardDeviationValid = resourceSurplusesValid;
                 productionBalanceInfo.StandardDeviationPercent = standardDeviationPercent;
+                productionBalanceInfo.StandardDeviation = standardDeviation;
+                productionBalanceInfo.AverageProduction = averageProduction;
             }
             
             // Production balance must be enabled.
@@ -801,8 +777,10 @@ namespace ChangeCompany
                 {
                     // It is time to do production balance.
 
+                    // Resource surpluses must be valid.
                     // Must meet minimum company count and meet minimum standard deviation percent.
-                    if (companyDetails.Count     >= settingProductionBalanceMinimumCompanies &&
+                    if (resourceSurplusesValid &&
+                        companyDetails.Count     >= settingProductionBalanceMinimumCompanies &&
                         standardDeviationPercent >= settingProductionBalanceMinimumStandardDeviation)
                     {
                         // Now, finally, try to do a production balance.
@@ -854,7 +832,17 @@ namespace ChangeCompany
                 // The max allowed company production is a percent of the city production of the resource.
                 // This prevents removing a company when its production accounts for a significant portion of city production.
                 // This is especially important in small cities where only 1 or a few companies produce each resource.
-                int maxAllowedCompanyProduction = resourceSurplusTooMuch.Production * settingProductionBalanceMaximumCompanyProduction / 100;
+                int maxAllowedCompanyProduction;
+                if (settingProductionBalanceMaximumCompanyProduction == 100)
+                {
+                    // This avoids rounding errors in the calc below.
+                    maxAllowedCompanyProduction = resourceSurplusTooMuch.Production;
+                }
+                else
+                {
+                    // This calculation needs to be double because the mutiplication can exceed max int.
+                    maxAllowedCompanyProduction = (int)((double)resourceSurplusTooMuch.Production * settingProductionBalanceMaximumCompanyProduction / 100d);
+                }
 
                 // Get the company infos for the too much resource.
                 CompanyInfos companyInfosTooMuch = _changeCompanySection.GetCompanyInfosForResource(resourceTooMuch);
@@ -974,7 +962,7 @@ namespace ChangeCompany
                         validCompanies.Add(new CompanyTotalWorth
                         {
                             CompanyDetail = companyDetailTooMuch,
-                            TotalWorth = GetCompanyTotalWorth(companyDetailTooMuch.CompanyEntity)
+                            TotalWorth = GetCompanyTotalWorth(companyDetailTooMuch.CompanyEntity, companyDetailTooMuch.CompanyPrefab)
                         });
                     }
                 }
@@ -998,24 +986,27 @@ namespace ChangeCompany
         /// <summary>
         /// Get company total worth.
         /// </summary>
-        private int GetCompanyTotalWorth(Entity companyEntity)
+        private int GetCompanyTotalWorth(Entity companyEntity, Entity companyPrefab)
         {
-            // TBD Disable production balance until it can be fixed for recent game releases.
-
-            //// Logic adapted from CompanyMoveAwaySystem.CheckMoveAwayJob.
-            //if (EntityManager.TryGetBuffer(companyEntity, true, out DynamicBuffer<Resources> resources))
-            //{
-            //    if (EntityManager.TryGetBuffer(companyEntity, true, out DynamicBuffer<OwnedVehicle> ownedVehicles))
-            //    {
-            //        return EconomyUtils.GetCompanyTotalWorth(
-            //            resources, ownedVehicles, ref _bufferLookupLayoutElement, ref _componentLookupDeliveryTruck, _resourcePrefabs, ref _componentLookupResourceData);
-            //    }
-            //    else
-            //    {
-            //        return EconomyUtils.GetCompanyTotalWorth(
-            //            resources, _resourcePrefabs, ref _componentLookupResourceData);
-            //    }
-            //}
+            // Logic adapted from CompanyMoveAwaySystem.CheckMoveAwayJob.
+            if (EntityManager.TryGetBuffer(companyEntity, true, out DynamicBuffer<Resources> resources))
+            {
+                bool isIndustrial = !_componentLookupServiceAvailable.HasComponent(companyEntity);
+				if (!EntityManager.TryGetComponent(companyPrefab, out IndustrialProcessData industrialProcessData))
+				{
+					industrialProcessData = default;
+				}
+                if (EntityManager.TryGetBuffer(companyEntity, true, out DynamicBuffer<OwnedVehicle> ownedVehicles))
+                {
+                    return EconomyUtils.GetCompanyTotalWorth(
+                        isIndustrial, industrialProcessData, resources, ownedVehicles, ref _bufferLookupLayoutElement, ref _componentLookupDeliveryTruck, _resourcePrefabs, ref _componentLookupResourceData);
+                }
+                else
+                {
+                    return EconomyUtils.GetCompanyTotalWorth(
+                        isIndustrial, industrialProcessData, resources, _resourcePrefabs, ref _componentLookupResourceData);
+                }
+            }
             return 0;
         }
 
