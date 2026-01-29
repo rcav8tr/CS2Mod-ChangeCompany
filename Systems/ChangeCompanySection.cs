@@ -141,21 +141,8 @@ namespace ChangeCompany
                 // Dump property prefabs.
                 //DumpPropertyPrefabs();
 
-                // Dump resource data to log file for analysis of resource prefab properties.
-                //ComponentLookup<ResourceData> componentLookupResourceData = CheckedStateRef.GetComponentLookup<ResourceData>(true);
-                //componentLookupResourceData.Update(ref CheckedStateRef);
-                //ResourceSystem resourceSystem = base.World.GetOrCreateSystemManaged<ResourceSystem>();
-                //ResourcePrefabs resourcePrefabs = resourceSystem.GetPrefabs();
-                //ResourceIterator iterator = ResourceIterator.GetIterator();
-                //while (iterator.Next())
-                //{
-                //    ResourceData resourceData = componentLookupResourceData[resourcePrefabs[iterator.resource]];
-                //    Mod.log.Info($"{iterator.resource}\t{resourceData.m_IsProduceable}\t{resourceData.m_IsTradable}\t{resourceData.m_IsMaterial}\t{resourceData.m_IsLeisure}\t{resourceData.m_Price.x}\t{resourceData.m_Price.y}");
-                //}
-                //ResourceData resourceData1 = componentLookupResourceData[resourcePrefabs[Resource.NoResource]];
-                //Mod.log.Info($"{Resource.NoResource}\t{resourceData1.m_IsProduceable}\t{resourceData1.m_IsTradable}\t{resourceData1.m_IsMaterial}\t{resourceData1.m_IsLeisure}\t{resourceData1.m_Price.x}\t{resourceData1.m_Price.y}");
-                //resourceData1 = componentLookupResourceData[resourcePrefabs[Resource.Last]];
-                //Mod.log.Info($"{Resource.Last}\t{resourceData1.m_IsProduceable}\t{resourceData1.m_IsTradable}\t{resourceData1.m_IsMaterial}\t{resourceData1.m_IsLeisure}\t{resourceData1.m_Price.x}\t{resourceData1.m_Price.y}");
+                // Dump resource data.
+                //DumpResourceData();
 #endif
             }
             catch (Exception ex)
@@ -425,6 +412,11 @@ namespace ChangeCompany
             {
                 PropertyPrefab = propertyPrefab;
 
+                // Check if has residential.
+                bool hasResidential =
+                    entityManager.TryGetComponent(propertyPrefab, out ObjectData objectData) &&
+                    objectData.m_Archetype.GetComponentTypes().Contains(typeof(ResidentialProperty));
+
                 // Get category and resources based on BuildingPropertyData.
                 PrefabSystem prefabSystem = World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<PrefabSystem>();
                 if (entityManager.TryGetComponent(propertyPrefab, out BuildingPropertyData buildingPropertyData))
@@ -440,17 +432,10 @@ namespace ChangeCompany
                         Mod.log.Warn($"Property prefab [{prefabSystem.GetPrefabName(propertyPrefab)}] has more than one of Sold, Manufactured, Stored.");
                     }
 
-                    // Check for residential mixed and commercial.
+                    // Check for commercial.
                     if (buildingPropertyData.m_AllowedSold != Resource.NoResource)
                     {
-                        if (HasResidential(entityManager, propertyPrefab))
-                        {
-                            Category = PropertyCategory.ResMix;
-                        }
-                        else
-                        {
-                            Category = PropertyCategory.Comm;
-                        }
+                        Category = hasResidential ? PropertyCategory.ResMix : PropertyCategory.Comm;
                         Resources = GetResourcesAllowed(buildingPropertyData.m_AllowedSold);
                     }
                     // Check for industrial and office.
@@ -480,14 +465,7 @@ namespace ChangeCompany
                     {
                         // Property prefab has no allowed resources for sold, manufactured, or stored.
                         // Check for residential vs other.
-                        if (HasResidential(entityManager, propertyPrefab))
-                        {
-                            Category = PropertyCategory.Res;
-                        }
-                        else
-                        {
-                            Category = PropertyCategory.Other;
-                        }
+                        Category = hasResidential ? PropertyCategory.Res : PropertyCategory.Other;
                         Resources = new List<Resource>();
                     }
                 }
@@ -495,14 +473,7 @@ namespace ChangeCompany
                 {
                     // Property prefab has no BuildingPropertyData.
                     // Check for residential vs other.
-                    if (HasResidential(entityManager, propertyPrefab))
-                    {
-                        Category = PropertyCategory.Res;
-                    }
-                    else
-                    {
-                        Category = PropertyCategory.Other;
-                    }
+                    Category = hasResidential ? PropertyCategory.Res : PropertyCategory.Other;
                     Resources = new List<Resource>();
                 }
 
@@ -518,18 +489,6 @@ namespace ChangeCompany
 
                 // Get prefab name.
                 Name = prefabSystem.GetPrefabName(propertyPrefab);
-            }
-
-            /// <summary>
-            /// Get whether or not the property prefab has residential.
-            /// </summary>
-            private bool HasResidential(EntityManager entityManager, Entity propertyPrefab)
-            {
-                if (entityManager.TryGetComponent(propertyPrefab, out ObjectData objectData))
-                {
-                    return objectData.m_Archetype.GetComponentTypes().Contains(typeof(ResidentialProperty));
-                }
-                return false;
             }
 
             /// <summary>
@@ -554,8 +513,18 @@ namespace ChangeCompany
         /// </summary>
         private void DumpPropertyPrefabs()
         {
-            // Get all property prefabs, identified by having BuildingData.
-            EntityQuery propertyPrefabsQuery = GetEntityQuery(ComponentType.ReadOnly<BuildingData>());
+            // Get all property prefabs, identified by having BuildingData or BuildingExtensionData.
+            EntityQuery propertyPrefabsQuery = GetEntityQuery
+            (
+                new EntityQueryDesc
+                {
+                    Any = new ComponentType[]
+                    {
+                        ComponentType.ReadOnly<BuildingData>(),
+                        ComponentType.ReadOnly<BuildingExtensionData>(),
+                    },
+                }
+            );
             List<Entity> propertyPrefabs = propertyPrefabsQuery.ToEntityArray(Allocator.Temp).ToList();
 
             // Do each property prefab.
@@ -627,6 +596,51 @@ namespace ChangeCompany
                 // Log the property data.
                 Mod.log.Info(line);
             }
+        }
+
+        /// <summary>
+        /// Dump resource data to log file for analysis of resource prefab properties.
+        /// </summary>
+        private void DumpResourceData()
+        {
+            // Dump resource count.
+            Mod.log.Info($"Resource count = {EconomyUtils.ResourceCount}");
+
+            // Do each resource in the resource order.
+            foreach (Resource resource in CompanyInfos.ResourceOrder)
+            {
+                DumpResourceDataDetail(resource);
+            }
+
+            // Do miscellaneous resources not in the resource order.
+            ResourceIterator iterator = ResourceIterator.GetIterator();
+            while (iterator.Next())
+            {
+                if (!CompanyInfos.ResourceOrder.Contains(iterator.resource))
+                {
+                    DumpResourceDataDetail(iterator.resource);
+                }
+            }
+
+            // Do Last resource, which is not included in any of the above.
+            DumpResourceDataDetail(Resource.Last);
+        }
+
+        /// <summary>
+        /// Dump resource data detail for the specified resource.
+        /// </summary>
+        private void DumpResourceDataDetail(Resource resource)
+        {
+            // Get resource data.
+            // It is not efficient to get component lookup and resource prefabs every call, but this is only for debug, so it is okay.
+            ComponentLookup<ResourceData> componentLookupResourceData = CheckedStateRef.GetComponentLookup<ResourceData>(true);
+            componentLookupResourceData.Update(ref CheckedStateRef);
+            ResourceSystem resourceSystem = base.World.GetOrCreateSystemManaged<ResourceSystem>();
+            ResourcePrefabs resourcePrefabs = resourceSystem.GetPrefabs();
+            ResourceData resourceData = componentLookupResourceData[resourcePrefabs[resource]];
+
+            // Write resource data to log file.
+            Mod.log.Info($"{resource}\t{resourceData.m_IsProduceable}\t{resourceData.m_IsTradable}\t{resourceData.m_IsMaterial}\t{resourceData.m_IsLeisure}\t{resourceData.m_Price.x}\t{resourceData.m_Price.y}\t{resourceData.m_Weight}");
         }
 #endif
 

@@ -287,10 +287,10 @@ The following mods were used in the development of this mod:
     <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/change-company.1808488/" />
 
     <!-- Version of the mod.  Copied from assembly Version. -->
-    <ModVersion Value="3.1.0" />
+    <ModVersion Value="3.2.0" />
 
     <!-- Recommended version of the base game to use the mod. -->
-    <GameVersion Value="1.4.2*" />
+    <GameVersion Value="1.5.3*" />
 
     <!-- Dependency for the mod.  Can be set multiple times. -->
     <Dependency Id="" />
@@ -301,10 +301,7 @@ The following mods were used in the development of this mod:
 
     <!-- Change log.  Copied from ChangeLog.md file.  Supports minimal markdown subset. -->
     <ChangeLog>
-- Update Production Balance logic for recent game releases.
-- Update Production Balance panel width to better handle locales and text scales.
-- Prevent locking storage companies because they cannot move away.
-- Fix companies with negative production.
+- Update for game version 1.5.3.
 </ChangeLog>
 
     <!-- External links.  Can be set multiple times. -->

@@ -81,6 +81,7 @@ namespace ChangeCompany
                 //      Therefore, the RequireAnyForUpdate prevents OnUpdate from running only on a city with no companies.
                 //      Furthermore, this new query is the one that OnUpdate actually uses to check for companies to move away.
                 companyQueryField.SetValue(_companyMoveAwaySystem, GetEntityQuery(
+                    ComponentType.ReadWrite<CompanyStatisticData>(),
                     ComponentType.ReadOnly<ProcessingCompany    >(),
                     ComponentType.ReadOnly<PropertyRenter       >(),
                     ComponentType.ReadOnly<WorkProvider         >(),

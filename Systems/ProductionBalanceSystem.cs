@@ -54,26 +54,22 @@ namespace ChangeCompany
         private partial struct GetCompanyDetailsJob : IJobChunk
         {
             // Entity type handle.
-            [ReadOnly] public EntityTypeHandle                          EntityTypeHandle;
+            [ReadOnly] public EntityTypeHandle                      EntityTypeHandle;
 
             // Component type handles.
-            [ReadOnly] public ComponentTypeHandle<PrefabRef             > ComponentTypeHandlePrefabRef;
-            [ReadOnly] public ComponentTypeHandle<PropertyRenter        > ComponentTypeHandlePropertyRenter;
+            [ReadOnly] public ComponentTypeHandle<OfficeCompany     > ComponentTypeHandleOfficeCompany;
+            [ReadOnly] public ComponentTypeHandle<PrefabRef         > ComponentTypeHandlePrefabRef;
+            [ReadOnly] public ComponentTypeHandle<PropertyRenter    > ComponentTypeHandlePropertyRenter;
 
             // Component lookups.
-            [ReadOnly] public ComponentLookup<IndustrialProcessData     > ComponentLookupIndustrialProcessData;
-            [ReadOnly] public ComponentLookup<PrefabRef                 > ComponentLookupPrefabRef;
-
-            // Resource flags for industrial and office.
-            [ReadOnly] public Resource                                  ResourcesIndustrial;
-            [ReadOnly] public Resource                                  ResourcesOffice;
+            [ReadOnly] public ComponentLookup<PrefabRef             > ComponentLookupPrefabRef;
 
             // Arrays of lists to return industrial and office company details to OnUpdate.
             // The outer array is one for each possible thread.
             // The inner list is one for each company detail created in that thread.
             // Even though the outer arrays are read only, entries can still be added to the inner lists.
-            [ReadOnly] public NativeArray<NativeList<CompanyDetail>>    CompanyDetailsIndustrial;
-            [ReadOnly] public NativeArray<NativeList<CompanyDetail>>    CompanyDetailsOffice;
+            [ReadOnly] public NativeArray<NativeList<CompanyDetail>> CompanyDetailsIndustrial;
+            [ReadOnly] public NativeArray<NativeList<CompanyDetail>> CompanyDetailsOffice;
 
             /// <summary>
             /// Job execution.
@@ -82,6 +78,9 @@ namespace ChangeCompany
             {
                 // Get thread index once.
                 int threadIndex = JobsUtility.ThreadIndex;
+
+                // Get once whether or not chunk is for office companies.
+                bool isOffice = chunk.Has(ref ComponentTypeHandleOfficeCompany);
 
                 // Get arrays of query data from the chunk.
                 NativeArray<Entity        > companyEntities        = chunk.GetNativeArray(EntityTypeHandle);
@@ -96,9 +95,8 @@ namespace ChangeCompany
                     Entity companyPrefab  = companyPrefabRefs[i].m_Prefab;
                     Entity propertyEntity = companyPropertyRenters[i].m_Property;
 
-                    // Get property prefab and company industrial process data.
-                    if (ComponentLookupPrefabRef.TryGetComponent(propertyEntity, out PrefabRef propertyPrefabRef) &&
-                        ComponentLookupIndustrialProcessData.TryGetComponent(companyPrefab, out IndustrialProcessData companyIndustrialProcessData))
+                    // Get property prefab.
+                    if (ComponentLookupPrefabRef.TryGetComponent(propertyEntity, out PrefabRef propertyPrefabRef))
                     {
                         // Create a new company detail to add.
                         // Company production gets set later.
@@ -111,17 +109,15 @@ namespace ChangeCompany
                                 PropertyPrefab = propertyPrefabRef.m_Prefab,
                             };
 
-                        // Use company's output resource to differentiate between industrial and office.
                         // Add an entry of company detail for this thread.
                         // By having a separate entry for each thread, parallel threads will never access the same inner list at the same time.
-                        Resource companyOutputResource = companyIndustrialProcessData.m_Output.m_Resource;
-                        if ((companyOutputResource & ResourcesIndustrial) != 0)
-                        {
-                            CompanyDetailsIndustrial[threadIndex].Add(in companyDetail);
-                        }
-                        else if ((companyOutputResource & ResourcesOffice) != 0)
+                        if (isOffice)
                         {
                             CompanyDetailsOffice[threadIndex].Add(in companyDetail);
+                        }
+                        else
+                        {
+                            CompanyDetailsIndustrial[threadIndex].Add(in companyDetail);
                         }
                     }
                 }
@@ -277,14 +273,6 @@ namespace ChangeCompany
             Resource.Media,
         };
 
-        // Define resource flags for industrial and office.
-        private Resource ResourceFlagsIndustrial;
-        private Resource ResourceFlagsOffice;
-
-        // Entity queries.
-        private EntityQuery _queryCompanies;
-        private EntityQuery _queryEconomyParameterData;
-
         // Arrays of lists to hold company details.
         // The outer array is one for each possible thread.
         // The inner list is one for each company detail created in that thread.
@@ -343,26 +331,6 @@ namespace ChangeCompany
                 _changeCompanySystem  = World.GetOrCreateSystemManaged<ChangeCompanySystem >();
                 _resourceSystem       = World.GetOrCreateSystemManaged<ResourceSystem      >();
                 _timeSystem           = World.GetOrCreateSystemManaged<TimeSystem          >();
-
-                // Initialize resource flags for industrial and office;
-                foreach (Resource resource in _resourcesIndustrial) { ResourceFlagsIndustrial |= resource; }
-                foreach (Resource resource in _resourcesOffice    ) { ResourceFlagsOffice     |= resource; }
-
-                // Query to get industrial and office companies.
-                // There is no way to distinguish between industrial and office companies based only on the components they have.
-                _queryCompanies = GetEntityQuery(
-                    ComponentType.ReadOnly<CompanyData      >(),
-                    ComponentType.ReadOnly<PrefabRef        >(),
-                    ComponentType.ReadOnly<IndustrialCompany>(),    
-                    ComponentType.ReadOnly<PropertyRenter   >(),    // Company must be on a property.
-                    ComponentType.Exclude<ExtractorCompany  >(),    // Exclude extractor companies.
-                    ComponentType.Exclude<StorageCompany    >(),    // Exclude storage companies.
-                    ComponentType.Exclude<MovingAway        >(),    // Exclude companies already moving away.
-                    ComponentType.Exclude<Deleted           >(),
-                    ComponentType.Exclude<Temp              >());
-
-                // Query to get economy parameter data.
-                _queryEconomyParameterData = GetEntityQuery(ComponentType.ReadOnly<EconomyParameterData>());
 
                 // Create arrays of lists to hold industrial and office company detail.
                 // Arrays and lists are persistent so they do not need to be created and expanded each time the production balance check runs.
@@ -553,7 +521,7 @@ namespace ChangeCompany
         {
             // Clear company detail lists.
             // When a NativeList is cleared, capacity remains the same.
-            // So once increased, the capacity never decreases, as desired
+            // So once increased, the capacity never decreases, as desired,
             // so list capacity does not need to be expanded each time production balance check runs.
             foreach (NativeList<CompanyDetail> companyDetailsList in _companyDetailsJobIndustrial)
             {
@@ -564,28 +532,34 @@ namespace ChangeCompany
                 companyDetailsList.Clear();
             }
 
+            // Query to get industrial and office companies.
+            EntityQuery queryCompanies = SystemAPI.QueryBuilder()
+                .WithAll<CompanyData, PrefabRef, IndustrialCompany>()
+                .WithAll<PropertyRenter                           >()   // Company must be on a property.
+                .WithNone<Deleted, Temp                           >()
+                .WithNone<ExtractorCompany, StorageCompany        >()   // Exclude extractor and storage companies.
+                .WithNone<MovingAway                              >()   // Exclude companies already moving away.
+                .Build();
+
             // Create the job to get company details.
             GetCompanyDetailsJob getCompanyDetailsJob = new()
             {
-                EntityTypeHandle                        = SystemAPI.GetEntityTypeHandle(),
-                    
-                ComponentTypeHandlePrefabRef            = SystemAPI.GetComponentTypeHandle  <PrefabRef              >(true),
-                ComponentTypeHandlePropertyRenter       = SystemAPI.GetComponentTypeHandle  <PropertyRenter         >(true),
+                EntityTypeHandle                    = SystemAPI.GetEntityTypeHandle(),
+                
+                ComponentTypeHandleOfficeCompany    = SystemAPI.GetComponentTypeHandle  <OfficeCompany  >(true),
+                ComponentTypeHandlePrefabRef        = SystemAPI.GetComponentTypeHandle  <PrefabRef      >(true),
+                ComponentTypeHandlePropertyRenter   = SystemAPI.GetComponentTypeHandle  <PropertyRenter >(true),
 
-                ComponentLookupIndustrialProcessData    = SystemAPI.GetComponentLookup      <IndustrialProcessData  >(true),
-                ComponentLookupPrefabRef                = SystemAPI.GetComponentLookup      <PrefabRef              >(true),
+                ComponentLookupPrefabRef            = SystemAPI.GetComponentLookup      <PrefabRef      >(true),
 
-                ResourcesIndustrial                     = ResourceFlagsIndustrial,
-                ResourcesOffice                         = ResourceFlagsOffice,
-
-                CompanyDetailsIndustrial                = _companyDetailsJobIndustrial,
-                CompanyDetailsOffice                    = _companyDetailsJobOffice,
+                CompanyDetailsIndustrial            = _companyDetailsJobIndustrial,
+                CompanyDetailsOffice                = _companyDetailsJobOffice,
             };
 
             // Schedule the job to get company details.
             // Execute the job in parallel (i.e. job uses multiple threads, if available).
             // Parallel threads execute much faster than a single thread.
-            base.Dependency = JobChunkExtensions.ScheduleParallel(getCompanyDetailsJob, _queryCompanies, base.Dependency);
+            base.Dependency = JobChunkExtensions.ScheduleParallel(getCompanyDetailsJob, queryCompanies, base.Dependency);
 
             // Wait for the company details job to complete before accessing the company details.
             base.Dependency.Complete();

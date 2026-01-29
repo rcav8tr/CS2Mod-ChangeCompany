@@ -42,11 +42,9 @@ namespace ChangeCompany
         private EntityArchetype _rentersUpdatedEventArchetype;
         private EntityArchetype _pathTargetMovedEventArchetype;
 
-        // Entity queries.
-        private EntityQuery     _companyQueryCommercial;
-        private EntityQuery     _companyQueryIndustrial;
-        private EntityQuery     _economyParameterDataQuery;
-        private EntityQuery     _workProviderParameterDataQuery;
+        // Entity queries for companies.
+        private EntityQuery _companyQueryCommercial;
+        private EntityQuery _companyQueryIndustrial;
 
         // Data from other systems for changing or removing a company.
         private List<ChangeCompanyData> _changeCompanyDatas;
@@ -112,19 +110,6 @@ namespace ChangeCompany
                     ComponentType.Exclude<MovingAway        >(),
                     ComponentType.Exclude<Deleted           >(),
                     ComponentType.Exclude<Temp              >());
-
-                // Initialize EconomyParameterData entity query.
-                // Query copied from PropertyProcessingSystem.
-                _economyParameterDataQuery = GetEntityQuery(
-                    ComponentType.ReadOnly<EconomyParameterData>());
-            
-                // Initialize WorkProviderParameterData entity query.
-                // Query adapted from CompanyMoveAwaySystem.
-                _workProviderParameterDataQuery = GetEntityQuery(new EntityQueryDesc
-                {
-                    All = new ComponentType[1] { ComponentType.ReadOnly<WorkProviderParameterData>() },
-                    Options = EntityQueryOptions.IncludeSystems
-                });
 
                 // Initialize change company datas.
                 _changeCompanyDatas = new();
@@ -515,7 +500,13 @@ namespace ChangeCompany
             // The WorkProvider notification entity is the property entity.
             if (EntityManager.TryGetComponent(companyToMoveAway, out WorkProvider workProvider))
             {
-                WorkProviderParameterData workProviderParameterData = _workProviderParameterDataQuery.GetSingleton<WorkProviderParameterData>();
+                // Query adapted from CompanyMoveAwaySystem.
+			    EntityQuery workProviderParameterDataQuery = SystemAPI.QueryBuilder()
+                    .WithAll<WorkProviderParameterData>()
+                    .WithOptions(EntityQueryOptions.IncludeSystems)
+                    .Build();
+
+                WorkProviderParameterData workProviderParameterData = workProviderParameterDataQuery.GetSingleton<WorkProviderParameterData>();
                 IconCommandBuffer iconCommandBuffer = _iconCommandSystem.CreateCommandBuffer();
                 if (workProvider.m_EducatedNotificationEntity != Entity.Null)
                 {
@@ -729,7 +720,7 @@ namespace ChangeCompany
             }
 
             // Get economy parameter data.
-            EconomyParameterData economyParameterData = _economyParameterDataQuery.GetSingleton<EconomyParameterData>();
+            EconomyParameterData economyParameterData = SystemAPI.GetSingleton<EconomyParameterData>();
 
             // Compute and return rent price per renter.
             return PropertyUtils.GetRentPricePerRenter(
