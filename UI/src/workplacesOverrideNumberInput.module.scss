@@ -1,0 +1,35 @@
+﻿.workplacesOverrideNumberInputWrapper
+{
+    width:                      calc(55rem + 75rem * (var(--fontScale) - 1));
+}
+
+.workplacesOverrideNumberInputContainer {
+    height:                     calc(21rem + 42rem * (var(--fontScale) - 1));
+}
+
+.workplacesOverrideNumberInput {
+    text-align:                 center;
+    margin-left:                5rem;
+    padding-top:                calc(1rem + 4rem * (var(--fontScale) - 1));
+    padding-bottom:             0rem;
+    border-top-width:           var(--stroke2);
+    border-left-width:          var(--stroke2);
+    border-right-width:         var(--stroke2);
+    border-bottom-width:        var(--stroke2);
+    border-top-left-radius:     4rem 4rem;
+    border-top-right-radius:    4rem 4rem;
+    border-bottom-left-radius:  4rem 4rem;
+    border-bottom-right-radius: 4rem 4rem;
+    color:                      var(--textColorDim);
+    background-color:           rgba(28, 37, 52, 0.72);
+    opacity:                    1;
+}
+
+.workplacesOverrideNumberInput:hover {
+    background-color:           rgba(63, 63, 63, 0.72);
+}
+
+.workplacesOverrideNumberInput:focus {
+    color:                      var(--textColorHighlight);
+    background-color:           rgba(63, 63, 63, 0.72);
+}

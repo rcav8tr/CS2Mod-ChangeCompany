@@ -3,6 +3,7 @@ import { SelectedInfoSectionBase    } from "cs2/bindings";
 import { useLocalization            } from "cs2/l10n";
 import { FormattedParagraphsProps   } from "cs2/ui";
 
+import   buttonStyles                 from "changeCompanyButton.module.scss";
 import   styles                       from "changeCompanyComponent.module.scss";
 import { CompanySelector            } from "companySelector";
 import { ModuleResolver             } from "moduleResolver";
@@ -105,11 +106,9 @@ export const ChangeCompanyComponent = (componentList: any): any =>
                     right=
                     {
                         <>
-                            <button className={styles.changeCompanyChangeThisButton} onClick={() => onChangeThisClicked()}>{labelChangeThis}</button>
-                            {
-                                props.hasCompany &&
-                                <button className={styles.changeCompanyChangeThisButton} onClick={() => onChangeAllClicked()}>{labelChangeAll}</button>
-                            }
+                                                  <button className={buttonStyles.changeCompanyButtonEnabled } onClick={() => onChangeThisClicked()}>{labelChangeThis}</button>
+                            { props.hasCompany && <button className={buttonStyles.changeCompanyButtonEnabled } onClick={() => onChangeAllClicked() }>{labelChangeAll }</button> }
+                            { props.hasCompany || <button className={buttonStyles.changeCompanyButtonDisabled}                                      >{labelChangeAll }</button> }
                         </>
                     }
                     disableFocus={true}

@@ -1,23 +1,26 @@
-﻿import { useValue, trigger          } from "cs2/api";
+﻿import { trigger                    } from "cs2/api";
 import { SelectedInfoSectionBase    } from "cs2/bindings";
 import { useLocalization            } from "cs2/l10n";
 import { FormattedParagraphsProps   } from "cs2/ui";
 
-import { bindingCompanyLocked       } from "bindings";
-import   styles                       from "lockCompanyComponent.module.scss";
+import   buttonStyles                 from "changeCompanyButton.module.scss";
 import   mod                          from "../mod.json";
 import { ModuleResolver             } from "moduleResolver";
 
 // The component for the lock company section.
 export const LockCompanyComponent = (componentList: any): any =>
 {
+    // Define props for company workplaces section.
+    // Adapted from bindings.d.ts for the game's sections.
+    interface LockCompanySection extends SelectedInfoSectionBase
+    {
+        companyLocked: boolean,
+    }
+
     // Add LockCompanySection to the component list.
     // Make sure section name is unique by including the mod id.
-    componentList[mod.id + ".LockCompanySection"] = (props: SelectedInfoSectionBase) =>
+    componentList[mod.id + ".LockCompanySection"] = (props: LockCompanySection) =>
     {
-        // Get company locked from binding.
-        const companyLocked: boolean = useValue(bindingCompanyLocked);
-
         // Get the mod's translated text.
         const { translate } = useLocalization();
         const sectionHeading: string = translate(mod.id + ".LockCompany" ) || "Lock Company";
@@ -31,7 +34,7 @@ export const LockCompanyComponent = (componentList: any): any =>
 
         // Get lock icon.
         // The two image files were copied from the game's Lock.svg and OpenLock.svg files but with the color changed.
-        const lockIcon: string = "coui://" + mod.id.toLowerCase() + (companyLocked ? "/LockClosed.svg" : "/LockOpen.svg");
+        const lockIcon: string = "coui://" + mod.id.toLowerCase() + (props.companyLocked ? "/LockClosed.svg" : "/LockOpen.svg");
 
         // Handle click on button for toggle company locked.
         function onToggleCompanyLockedClicked()
@@ -63,13 +66,13 @@ export const LockCompanyComponent = (componentList: any): any =>
                                 className={ModuleResolver.instance.ToolButtonClasses.button}
                                 src={lockIcon}
                                 onSelect={onToggleCompanyLockedClicked}
-                                selected={companyLocked}
+                                selected={props.companyLocked}
                                 multiSelect={false}
                                 disabled={false}
                                 focusKey={ModuleResolver.instance.FOCUS_DISABLED}
                             />
-                            <button className={styles.lockCompanyLockUnlockButtons} onClick={() => onAllCompaniesLikeCurrentClicked(true )}>{labelLockAll  }</button>
-                            <button className={styles.lockCompanyLockUnlockButtons} onClick={() => onAllCompaniesLikeCurrentClicked(false)}>{labelUnlockAll}</button>
+                            <button className={buttonStyles.changeCompanyButtonEnabled} onClick={() => onAllCompaniesLikeCurrentClicked(true )}>{labelLockAll  }</button>
+                            <button className={buttonStyles.changeCompanyButtonEnabled} onClick={() => onAllCompaniesLikeCurrentClicked(false)}>{labelUnlockAll}</button>
                         </>
                     }
                     disableFocus={true}

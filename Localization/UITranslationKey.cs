@@ -19,6 +19,14 @@ namespace ChangeCompany
         public const string LockAll                                                         = ModAssemblyInfo.Name + ".LockAll";
         public const string UnlockAll                                                       = ModAssemblyInfo.Name + ".UnlockAll";
 
+        // Section text for Company Workplaces.
+        public const string CompanyWorkplaces                                               = ModAssemblyInfo.Name + ".CompanyWorkplaces";
+        public const string Default                                                         = ModAssemblyInfo.Name + ".Default";
+        public const string Overwritten                                                     = ModAssemblyInfo.Name + ".Overwritten";
+        public const string NewTotalWorkplaces                                              = ModAssemblyInfo.Name + ".NewTotalWorkplaces";
+        public const string Apply                                                           = ModAssemblyInfo.Name + ".Apply";
+        public const string Reset                                                           = ModAssemblyInfo.Name + ".Reset";
+
         // Section tool tips for change company, one for each property type.
         private const string SectionTooltipPrefix = ".SectionTooltip";
         public const string SectionTooltipCommercial                                        = ModAssemblyInfo.Name + SectionTooltipPrefix + "Commercial";
@@ -31,6 +39,9 @@ namespace ChangeCompany
 
         // Section tool tip for lock company.
         public const string SectionTooltipLockCompany                                       = ModAssemblyInfo.Name + SectionTooltipPrefix + "LockCompany";
+
+        // Section tool tip for Company Workplaces.
+        public const string SectionTooltipCompanyWorkplaces                                 = ModAssemblyInfo.Name + SectionTooltipPrefix + "CompanyWorkplaces";
 
         // Production balance button and panel heading.
         public const string ProductionBalanceStatistics                                     = ModAssemblyInfo.Name + ".ProductionBalanceStatistics";
@@ -62,7 +73,7 @@ namespace ChangeCompany
         // Settings.
         public const string SettingTitle                                                    = "Options.SECTION" +       "[ChangeCompany.ChangeCompany.Mod]";
         
-        public const string SettingGroupProductionBalance                                   = "Options.GROUP" +         "[ChangeCompany.ChangeCompany.Mod.ProductionBalance]";
+        public const string SettingTabProductionBalance                                     = "Options.TAB" +           "[ChangeCompany.ChangeCompany.Mod.ProductionBalance]";
         public const string SettingProductionBalanceGeneralDescription                      = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.ProductionBalanceGeneralDescription]";
         public const string SettingProductionBalanceEnabledIndustrialLabel                  = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.ProductionBalanceEnabledIndustrial]";
         public const string SettingProductionBalanceEnabledIndustrialDesc                   = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.ProductionBalanceEnabledIndustrial]";
@@ -91,7 +102,7 @@ namespace ChangeCompany
         public const string SettingProductionBalanceResetLabel                              = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.ProductionBalanceReset]";
         public const string SettingProductionBalanceResetDesc                               = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.ProductionBalanceReset]";
         
-        public const string SettingGroupLockCompany                                         = "Options.GROUP" +         "[ChangeCompany.ChangeCompany.Mod.LockCompany]";
+        public const string SettingTabLockCompany                                           = "Options.TAB" +           "[ChangeCompany.ChangeCompany.Mod.LockCompany]";
         public const string SettingLockAfterChangeLabel                                     = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.LockAfterChange]";
         public const string SettingLockAfterChangeDesc                                      = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.LockAfterChange]";
         public const string SettingLockAllCompaniesLabel                                    = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.LockAllCompanies]";
@@ -99,7 +110,13 @@ namespace ChangeCompany
         public const string SettingUnlockAllCompaniesLabel                                  = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.UnlockAllCompanies]";
         public const string SettingUnlockAllCompaniesDesc                                   = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.UnlockAllCompanies]";
 
-        public const string SettingGroupAbout                                               = "Options.GROUP" +         "[ChangeCompany.ChangeCompany.Mod.About]";
+        public const string SettingTabCompanyWorkplaces                                     = "Options.TAB" +           "[ChangeCompany.ChangeCompany.Mod.CompanyWorkplaces]";
+        public const string SettingKeepWorkplacesOverrideAfterChangeLabel                   = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.KeepWorkplacesOverrideAfterChange]";
+        public const string SettingKeepWorkplacesOverrideAfterChangeDesc                    = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.KeepWorkplacesOverrideAfterChange]";
+        public const string SettingCompanyWorkplacesRemoveAllOverridesLabel                 = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.CompanyWorkplacesRemoveAllOverrides]";
+        public const string SettingCompanyWorkplacesRemoveAllOverridesDesc                  = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.CompanyWorkplacesRemoveAllOverrides]";
+
+        public const string SettingTabAbout                                                 = "Options.TAB" +           "[ChangeCompany.ChangeCompany.Mod.About]";
         public const string SettingModVersionLabel                                          = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.ModVersion]";
         public const string SettingModVersionDesc                                           = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.ModVersion]";
     }

@@ -13,15 +13,15 @@ namespace ChangeCompany
     /// The settings for this mod.
     /// </summary>
     [FileLocation(nameof(ChangeCompany))]
-    [SettingsUIGroupOrder(GroupProductionBalance, GroupLockCompany, GroupAbout)]
-    [SettingsUIShowGroupName(GroupProductionBalance, GroupLockCompany, GroupAbout)]
+	[SettingsUITabOrder(TabProductionBalance, TabLockCompany, TabCompanyWorkplaces, TabAbout)]
     [SettingsUIKeyboardAction(ProductionBalanceActivationKeyActionName, modifierOptions: ModifierOptions.Allow)]
     public class ModSettings : ModSetting
     {
-        // Group constants.
-        private const string GroupProductionBalance = "ProductionBalance";
-        private const string GroupLockCompany       = "LockCompany";
-        private const string GroupAbout             = "About";
+        // Tab constants.
+        private const string TabProductionBalance = "ProductionBalance";
+        private const string TabLockCompany       = "LockCompany";
+        private const string TabCompanyWorkplaces = "CompanyWorkplaces";
+        private const string TabAbout             = "About";
 
         // Production balance activation key action name.
         public const string ProductionBalanceActivationKeyActionName = "ProductionBalanceActivationKey";
@@ -33,6 +33,7 @@ namespace ChangeCompany
         private readonly ProductionBalanceSystem   _productionBalanceSystem;
         private readonly ProductionBalanceUISystem _productionBalanceUISystem;
         private readonly LockCompanySection        _lockCompanySection;
+        private readonly CompanyWorkplacesSection  _companyWorkplacesSection;
 
         // Constructor.
         public ModSettings(IMod mod) : base(mod)
@@ -44,6 +45,7 @@ namespace ChangeCompany
             _productionBalanceSystem   = defaultWorld.GetOrCreateSystemManaged<ProductionBalanceSystem>();
             _productionBalanceUISystem = defaultWorld.GetOrCreateSystemManaged<ProductionBalanceUISystem>();
             _lockCompanySection        = defaultWorld.GetOrCreateSystemManaged<LockCompanySection>();
+            _companyWorkplacesSection  = defaultWorld.GetOrCreateSystemManaged<CompanyWorkplacesSection>();
 
             // Set defaults.
             SetDefaults();
@@ -57,6 +59,8 @@ namespace ChangeCompany
             SetDefaultsProductionBalance();
             LockAfterChange  = false;
             LockAllCompanies = false;
+            KeepWorkplacesOverrideAfterChange = false;
+            WorkplacesOverrideValue = 30;
         }
 
         /// <summary>
@@ -96,13 +100,13 @@ namespace ChangeCompany
         }
 
         // General description for production balance.
-        [SettingsUISection(GroupProductionBalance)]
+        [SettingsUISection(TabProductionBalance, "")]
         [SettingsUIMultilineText]
         public string ProductionBalanceGeneralDescription => Translation.Get(UITranslationKey.SettingProductionBalanceGeneralDescription);
 
         // Whether or not production balance is enabled, for industrial.
         private bool _productionBalanceEnabledIndustrial;
-        [SettingsUISection(GroupProductionBalance)]
+        [SettingsUISection(TabProductionBalance, "")]
         public bool ProductionBalanceEnabledIndustrial
         {
             get { return _productionBalanceEnabledIndustrial; }
@@ -111,7 +115,7 @@ namespace ChangeCompany
 
         // Whether or not production balance is enabled, for office.
         private bool _productionBalanceEnabledOffice;
-        [SettingsUISection(GroupProductionBalance)]
+        [SettingsUISection(TabProductionBalance, "")]
         public bool ProductionBalanceEnabledOffice
         {
             get { return _productionBalanceEnabledOffice; }
@@ -122,7 +126,7 @@ namespace ChangeCompany
         private const float MinInterval = 1f;
         private const float MaxInterval = 60f;
         private int _productionBalanceCheckIntervalIndustrial;
-        [SettingsUISection(GroupProductionBalance)]
+        [SettingsUISection(TabProductionBalance, "")]
         [SettingsUISlider(min = MinInterval, max = MaxInterval, step = 1f, scalarMultiplier = 1f, unit = Unit.kInteger)]
         public int ProductionBalanceCheckIntervalIndustrial
         {
@@ -132,7 +136,7 @@ namespace ChangeCompany
 
         // Interval in minutes between production balance checks, for office.
         private int _productionBalanceCheckIntervalOffice;
-        [SettingsUISection(GroupProductionBalance)]
+        [SettingsUISection(TabProductionBalance, "")]
         [SettingsUISlider(min = MinInterval, max = MaxInterval, step = 1f, scalarMultiplier = 1f, unit = Unit.kInteger)]
         public int ProductionBalanceCheckIntervalOffice
         {
@@ -141,42 +145,42 @@ namespace ChangeCompany
         }
 
         // Minimum number of companies to allow production balance, for industrial.
-        [SettingsUISection(GroupProductionBalance)]
+        [SettingsUISection(TabProductionBalance, "")]
         [SettingsUISlider(min = 20f, max = 100f, step = 1f, scalarMultiplier = 1f, unit = Unit.kInteger)]
         public int ProductionBalanceMinimumCompaniesIndustrial { get; set; }
 
         // Minimum number of companies to allow production balance, for office.
-        [SettingsUISection(GroupProductionBalance)]
+        [SettingsUISection(TabProductionBalance, "")]
         [SettingsUISlider(min = 5f, max = 50f, step = 1f, scalarMultiplier = 1f, unit = Unit.kInteger)]
         public int ProductionBalanceMinimumCompaniesOffice { get; set; }
 
         // Minimum standard deviation percent of surpluses to allow production balance, for industrial.
         private const float MinStdDev = 10f;
         private const float MaxStdDev = 150f;
-        [SettingsUISection(GroupProductionBalance)]
+        [SettingsUISection(TabProductionBalance, "")]
         [SettingsUISlider(min = MinStdDev, max = MaxStdDev, step = 1f, scalarMultiplier = 1f, unit = Unit.kPercentage)]
         public int ProductionBalanceMinimumStandardDeviationIndustrial { get; set; }
 
         // Minimum standard deviation percent of surpluses to allow production balance, for office.
-        [SettingsUISection(GroupProductionBalance)]
+        [SettingsUISection(TabProductionBalance, "")]
         [SettingsUISlider(min = MinStdDev, max = MaxStdDev, step = 1f, scalarMultiplier = 1f, unit = Unit.kPercentage)]
         public int ProductionBalanceMinimumStandardDeviationOffice { get; set; }
 
         // Maximum production of the company as a percent of the city's production to allow production balance, for industrial.
         private const float MinMaxProd = 20f;
         private const float MaxMaxProd = 100f;
-        [SettingsUISection(GroupProductionBalance)]
+        [SettingsUISection(TabProductionBalance, "")]
         [SettingsUISlider(min = MinMaxProd, max = MaxMaxProd, step = 1f, scalarMultiplier = 1f, unit = Unit.kPercentage)]
         public int ProductionBalanceMaximumCompanyProductionIndustrial { get; set; }
 
         // Maximum production of the company as a percent of the city's production to allow production balance, for office.
-        [SettingsUISection(GroupProductionBalance)]
+        [SettingsUISection(TabProductionBalance, "")]
         [SettingsUISlider(min = MinMaxProd, max = MaxMaxProd, step = 1f, scalarMultiplier = 1f, unit = Unit.kPercentage)]
         public int ProductionBalanceMaximumCompanyProductionOffice { get; set; }
 
         // Whether or not to hide the activation button.
         private bool _productionBalanceHideActivationButton;
-        [SettingsUISection(GroupProductionBalance)]
+        [SettingsUISection(TabProductionBalance, "")]
         public bool ProductionBalanceHideActivationButton
         {
             get { return _productionBalanceHideActivationButton; }
@@ -187,7 +191,7 @@ namespace ChangeCompany
         // Default is Ctrl+Shift+B.
         private ProxyBinding _productionBalanceActivationKey;
         [SettingsUIKeyboardBinding(BindingKeyboard.B, ProductionBalanceActivationKeyActionName, ctrl: true, shift: true)]
-        [SettingsUISection(GroupProductionBalance)]
+        [SettingsUISection(TabProductionBalance, "")]
         public ProxyBinding ProductionBalanceActivationKey
         {
             get { return _productionBalanceActivationKey; }
@@ -206,7 +210,7 @@ namespace ChangeCompany
 
         // Button to reset production balance settings.
         [SettingsUIButton()]
-        [SettingsUISection(GroupProductionBalance)]
+        [SettingsUISection(TabProductionBalance, "")]
         public bool ProductionBalanceReset
         {
             set { SetDefaultsProductionBalance(); UpdateProductionBalanceUISettingsIfLoaded(); }
@@ -252,13 +256,13 @@ namespace ChangeCompany
         }
 
 
-        // Whether or not to automatically lock a company after it is changed.
-        [SettingsUISection(GroupLockCompany)]
+        // Whether or not to automatically lock a company after the company is changed.
+        [SettingsUISection(TabLockCompany, "")]
         public bool LockAfterChange { get; set;}
 
         // Whether or not to lock all companies.
         private bool _lockAllCompanies = false;
-        [SettingsUISection(GroupLockCompany)]
+        [SettingsUISection(TabLockCompany, "")]
         public bool LockAllCompanies
         {
             get
@@ -282,7 +286,7 @@ namespace ChangeCompany
         // Button to unlock all companies.
         // Hide the button if not in a game.
         [SettingsUIButton()]
-        [SettingsUISection(GroupLockCompany)]
+        [SettingsUISection(TabLockCompany, "")]
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(NotInGame))]
         public bool UnlockAllCompanies
         {
@@ -299,10 +303,29 @@ namespace ChangeCompany
         {
             return GameManager.instance.gameMode != GameMode.Game;
         }
+        
+
+        // Whether or not to keep a company workplaces overrride after the company is changed.
+        [SettingsUISection(TabCompanyWorkplaces, "")]
+        public bool KeepWorkplacesOverrideAfterChange { get; set;}
+
+        // Button to remove all company workplace overrides.
+        // Hide the button if not in a game.
+        [SettingsUIButton()]
+        [SettingsUISection(TabCompanyWorkplaces, "")]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(NotInGame))]
+        public bool CompanyWorkplacesRemoveAllOverrides
+        {
+            set { _companyWorkplacesSection.RemoveAllWorkplacesOverrides(); }
+        }
+
+        // Company workplaces override value.
+        [SettingsUIHidden]
+        public int WorkplacesOverrideValue { get; set; }
 
 
         // Display mod version in settings.
-        [SettingsUISection(GroupAbout)]
+        [SettingsUISection(TabAbout, "")]
         public string ModVersion { get { return ModAssemblyInfo.Version; } }
     }
 }

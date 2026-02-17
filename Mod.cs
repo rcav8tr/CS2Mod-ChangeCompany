@@ -6,6 +6,7 @@ using Game.Modding;
 using Game.SceneFlow;
 using Game.Simulation;
 using Game.UI.InGame;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,6 +20,9 @@ namespace ChangeCompany
     /// </summary>
     public class Mod : IMod
     {
+        // Harmony ID.
+        public const string HarmonyID = "rcav8tr." + ModAssemblyInfo.Name;
+
         // Create a new log just for this mod.
         // This mod will have its own log file in the game's Logs folder.
         public static readonly ILog log = LogManager.GetLogger(ModAssemblyInfo.Name)
@@ -34,7 +38,7 @@ namespace ChangeCompany
         public void OnLoad(UpdateSystem updateSystem)
         {
             log.Info($"{nameof(Mod)}.{nameof(OnLoad)} Version {ModAssemblyInfo.Version}");
-            
+
             try
             {
                 // Register and load mod settings.
@@ -46,7 +50,7 @@ namespace ChangeCompany
 
                 // Initialize translations.
                 Translation.Initialize();
-                
+
                 // Initialize production and surplus.
                 ProductionSurplus.Initialize();
 
@@ -67,9 +71,10 @@ namespace ChangeCompany
                 // Instead, updates are handled by SelectedInfoUISystem which runs in UIUpdate phase.
                 // The sections just need to be created.
                 World defaultWorld = World.DefaultGameObjectInjectionWorld;
-                ChangeCompanySection changeCompanySection = defaultWorld.GetOrCreateSystemManaged<ChangeCompanySection>();
-                LockCompanySection   lockCompanySection   = defaultWorld.GetOrCreateSystemManaged<LockCompanySection  >();
-                    
+                ChangeCompanySection     changeCompanySection     = defaultWorld.GetOrCreateSystemManaged<ChangeCompanySection>();
+                LockCompanySection       lockCompanySection       = defaultWorld.GetOrCreateSystemManaged<LockCompanySection>();
+                CompanyWorkplacesSection companyWorkplacesSection = defaultWorld.GetOrCreateSystemManaged<CompanyWorkplacesSection>();
+
                 // Use reflection to get the list of middle sections from SelectedInfoUISystem.
                 FieldInfo fieldInfoMiddleSections = typeof(SelectedInfoUISystem).GetField("m_MiddleSections", BindingFlags.Instance | BindingFlags.NonPublic);
                 if (fieldInfoMiddleSections == null)
@@ -99,7 +104,7 @@ namespace ChangeCompany
                 // Check if game's CompanySection was found.
                 if (companySectionIndex == -1)
                 {
-                    // Log an error and add this mod's sections to the end.
+                    // Log an error and add this mod's ChangeCompanySection and LockCompanySection to the end.
                     log.Error($"[{ModAssemblyInfo.Title}] Unable to find CompanySection in middle sections from SelectedInfoUISystem.");
                     middleSections.Add(changeCompanySection);
                     middleSections.Add(lockCompanySection);
@@ -112,28 +117,62 @@ namespace ChangeCompany
                     middleSections.Insert(companySectionIndex + 2, lockCompanySection);
                 }
 
-                // Activate this mod's ChangeCompanySystem which contains the logic to change or remove the company on a property.
+                // Get the index of the game's EmployeesSection.
+                int employeesSectionIndex = -1;
+                for (int i = 0; i < middleSections.Count; i++)
+                {
+                    if (middleSections[i] is EmployeesSection)
+                    {
+                        employeesSectionIndex = i;
+                        break;
+                    }
+                }
+
+                // Check if game's EmployeesSection was found.
+                if (employeesSectionIndex == -1)
+                {
+                    // Log an error and add this mod's CompanyWorkplacesSection to the end.
+                    log.Error($"[{ModAssemblyInfo.Title}] Unable to find EmployeesSection in middle sections from SelectedInfoUISystem.");
+                    middleSections.Add(companyWorkplacesSection);
+                }
+                else
+                {
+                    // Insert CompanyWorkplacesSection right after the game EmployeesSection.
+                    // This is the order they will be displayed by the game.
+                    middleSections.Insert(employeesSectionIndex + 1, companyWorkplacesSection);
+                }
+
+                // Create and activate this mod's ChangeCompanySystem which contains the logic to change or remove the company on a property.
                 // In the game, this logic is normally executed in the GameSimulation phase.
                 // Of course, the GameSimulation phase runs only when the simulation is running.
                 // It is highly desired to allow the player to change companies while the game is paused.
                 // Therefore, ChangeCompanySystem updates in the PostSimulation phase, which runs even when the game is paused.
                 updateSystem.UpdateAt<ChangeCompanySystem>(SystemUpdatePhase.PostSimulation);
 
-                // Activate this mod's production balance systems.
+                // Create and activate this mod's production balance systems.
                 // Run after the TimeSystem which updates the game date/time.
                 updateSystem.UpdateAfter<ProductionBalanceSystem, TimeSystem>(SystemUpdatePhase.GameSimulation);
                 updateSystem.UpdateAt<ProductionBalanceUISystem>(SystemUpdatePhase.UIUpdate);
 
+                // Create this mod's company workplaces systems.
+                // These systems do not run in a system update phase and do nothing in their OnUpdate.
+                // Instead, they use a Harmony postfix to run after another system OnUpdate runs.
+                // Therefore, these systems just need to be created.
+                defaultWorld.GetOrCreateSystemManaged<CommercialWorkplacesSystem>();
+                defaultWorld.GetOrCreateSystemManaged<ExtractorWorkplacesSystem >();
+                defaultWorld.GetOrCreateSystemManaged<IndustrialWorkplacesSystem>();
+                defaultWorld.GetOrCreateSystemManaged<RWHCompanyWorkplacesSystem>();
+
 #if DEBUG
                 // Get localized text from the game where the value is or contains specific text.
-                //Colossal.Localization.LocalizationManager localizationManager = Game.SceneFlow.GameManager.instance.localizationManager;
+                //Colossal.Localization.LocalizationManager localizationManager = GameManager.instance.localizationManager;
                 //foreach (KeyValuePair<string, string> keyValue in localizationManager.activeDictionary.entries)
                 //{
                 //    // Exclude assets.
                 //    if (!keyValue.Key.StartsWith("Assets."))
                 //    {
-                //        if (keyValue.Value.ToLower().Contains("no data"))
-                //        //if (keyValue.Value.ToLower() == "no data")
+                //        //if (keyValue.Value.ToLower().Contains("no data"))
+                //        if (keyValue.Value.ToLower() == "default")
                 //        {
                 //            log.Info(keyValue.Key + "\t" + keyValue.Value);
                 //        }
@@ -147,10 +186,10 @@ namespace ChangeCompany
                 //    localizationManager.SetActiveLocale(localeID);
                 //    foreach (KeyValuePair<string, string> keyValue in localizationManager.activeDictionary.entries)
                 //    {
-                //        if (keyValue.Key == "Options.INPUT_CONTROL[Keyboard.ctrl]")
+                //        if (keyValue.Key == "EconomyPanel.LOAN_FORM_RESET" || keyValue.Key == "Options.OPTION[ModdingSettings.updateModdingToolchain]")
                 //        {
                 //            log.Info(keyValue.Key + "\t" + localeID + "\t" + keyValue.Value);
-                //            break;
+                //            //break;
                 //        }
                 //    }
                 //}
@@ -175,6 +214,9 @@ namespace ChangeCompany
             // Unregister mod settings.
             ModSettings?.UnregisterInOptionsUI();
             ModSettings = null;
+            
+            // Remove all Harmony patches for this mod.
+            new Harmony(HarmonyID).UnpatchAll();
         }
     }
 }

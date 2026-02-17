@@ -33,16 +33,17 @@ export type ProductionBalanceInfo =
     averageProduction:          number;
 }
 
-// Define binding for selected company.
+// Define binding for selected company index.
 export const bindingSelectedCompanyIndex            = bindValue<number                      >(mod.id, "SelectedCompanyIndex",   0);
-
-// Define binding for company locked.
-export const bindingCompanyLocked                   = bindValue<boolean                     >(mod.id, "CompanyLocked",          false);
 
 // Define bindings for production balance.
 export const bindingProductionBalanceUISettings     = bindValue<ProductionBalanceUISettings >(mod.id, "ProductionBalanceUISettings");
 export const bindingProductionBalanceInfoIndustrial = bindValue<ProductionBalanceInfo       >(mod.id, "ProductionBalanceInfoIndustrial");
 export const bindingProductionBalanceInfoOffice     = bindValue<ProductionBalanceInfo       >(mod.id, "ProductionBalanceInfoOffice");
+
+// Define bindings for workplaces override.
+export const bindingWorkplacesOverrideValid         = bindValue<boolean                     >(mod.id, "WorkplacesOverrideValid");
+export const bindingWorkplacesOverrideValue         = bindValue<number                      >(mod.id, "WorkplacesOverrideValue");
 
 // Game bindings.
 export const bindingActiveLocale                    = bindValue<string                      >("app",        "activeLocale",     "en-US");

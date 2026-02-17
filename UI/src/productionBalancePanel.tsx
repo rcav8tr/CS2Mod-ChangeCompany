@@ -83,9 +83,6 @@ export const ProductionBalancePanel = () =>
         width:  adjustedPanelWidth + "rem",
     }
 
-    // Function to join classes.
-    function joinClasses(...classes: any) { return classes.join(" "); }
-
     // Variables for dragging.
     let productionBalancePanel: HTMLElement | null = null;
     let relativePositionX: number = 0.0;
@@ -220,20 +217,20 @@ export const ProductionBalancePanel = () =>
                             onMouseDown={(e) => onMouseDown(e)}
                         >
                             <img className={ModuleResolver.instance.PanelClasses.icon} src={productionBalanceIcon} />
-                            <div className={joinClasses(ModuleResolver.instance.PanelThemeClasses.title,
-                                                        styles.productionBalancePanelHeaderTitle)}>
+                            <div className={`${ModuleResolver.instance.PanelThemeClasses.title}
+                                             ${styles.productionBalancePanelHeaderTitle}`}>
                                 {productionBalanceTitle}
                             </div>
                             <button
                                 id={elementIDProductionBalancePanelClose}
-                                className={joinClasses(ModuleResolver.instance.PanelClasses.closeButton,
-                                                       ModuleResolver.instance.RoundHighlightButtonClasses.button,
-                                                       styles.productionBalancePanelHeaderClose)}
+                                className={`${ModuleResolver.instance.PanelClasses.closeButton}
+                                            ${ModuleResolver.instance.RoundHighlightButtonClasses.button}
+                                            ${styles.productionBalancePanelHeaderClose}`}
                                 onClick={() => onCloseClick()}
                             >
                                 <div
-                                    className={joinClasses(ModuleResolver.instance.TintedIconClasses.tintedIcon,
-                                                           ModuleResolver.instance.IconButtonClasses.icon)}
+                                    className={`${ModuleResolver.instance.TintedIconClasses.tintedIcon}
+                                                ${ModuleResolver.instance.IconButtonClasses.icon}`}
                                     style={{ maskImage: "url(Media/Glyphs/Close.svg)" }}
                                 >
                                 </div>

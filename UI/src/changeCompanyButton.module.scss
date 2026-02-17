@@ -1,4 +1,5 @@
-﻿.lockCompanyToggleButton {
+﻿.changeCompanyButtonEnabled {
+    // These are same between enabled and disabled.
     margin-left:                5rem;
     padding-top:                0rem;
     padding-left:               8rem;
@@ -8,31 +9,35 @@
     border-top-right-radius:    4rem 4rem;
     border-bottom-left-radius:  4rem 4rem;
     border-bottom-right-radius: 4rem 4rem;
-    color:                      rgba(224, 224, 224, 1);
-    background-color:           rgba(128, 128, 128, 1);
-}
-
-.lockCompanyToggleButton:hover {
-    color:                      rgba(255, 255, 255, 1);
-    background-color:           rgba(154, 154, 154, 1);
-}
-
-.lockCompanyLockUnlockButtons {
-    margin-left:                5rem;
-    padding-top:                0rem;
-    padding-left:               8rem;
-    padding-right:              8rem;
-    padding-bottom:             0rem;
-    border-top-left-radius:     4rem 4rem;
-    border-top-right-radius:    4rem 4rem;
-    border-bottom-left-radius:  4rem 4rem;
-    border-bottom-right-radius: 4rem 4rem;
-    color:                      rgba(224, 224, 224, 1);
-    background-color:           rgba(128, 128, 128, 1);
     white-space:                pre-wrap;
+
+    // Colors are for enabled than disabled.
+    color:                      rgba(224, 224, 224, 1);
+    background-color:           rgba(128, 128, 128, 1);
 }
 
-.lockCompanyLockUnlockButtons:hover {
+.changeCompanyButtonEnabled:hover {
+    // Enabled color is brighter for hover.
     color:                      rgba(255, 255, 255, 1);
     background-color:           rgba(154, 154, 154, 1);
+}
+
+.changeCompanyButtonDisabled {
+    // These are same between enabled and disabled.
+    margin-left:                5rem;
+    padding-top:                0rem;
+    padding-left:               8rem;
+    padding-right:              8rem;
+    padding-bottom:             0rem;
+    border-top-left-radius:     4rem 4rem;
+    border-top-right-radius:    4rem 4rem;
+    border-bottom-left-radius:  4rem 4rem;
+    border-bottom-right-radius: 4rem 4rem;
+    white-space:                pre-wrap;
+
+    // Colors are darker for disabled than enabled.
+    color:                      rgba(128, 128, 128, 1);
+    background-color:           rgba( 64,  64,  64, 1);
+    
+    // Disabled does not change color for hover.
 }

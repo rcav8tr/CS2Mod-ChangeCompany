@@ -1,1 +1,2 @@
-﻿- Update for game version 1.5.3.
+﻿- Add ability to override the number of workplaces at a company.
+- Minor code improvements.

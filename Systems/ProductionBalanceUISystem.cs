@@ -24,9 +24,6 @@ namespace ChangeCompany
         // Localization.
         private LocalizationManager _localizationManager;
 
-        // System control.
-        private bool _inGame = false;
-
         // Production balance info.
         private ProductionBalanceInfo _productionBalanceInfoIndustrial;
         private ProductionBalanceInfo _productionBalanceInfoOffice;
@@ -58,11 +55,11 @@ namespace ChangeCompany
         /// </summary>
         protected override void OnCreate()
         {
-            base.OnCreate();
-
             try
             {
                 Mod.log.Info($"{nameof(ProductionBalanceUISystem)}.{nameof(OnCreate)}");
+
+                base.OnCreate();
 
                 // Get other systems.
                 _productionBalanceSystem = World.GetOrCreateSystemManaged<ProductionBalanceSystem>();
@@ -89,36 +86,20 @@ namespace ChangeCompany
         }
 
         /// <summary>
-        /// Called by the game when a GameMode is about to be loaded.
-        /// </summary>
-        protected override void OnGamePreload(Purpose purpose, GameMode mode)
-        {
-            base.OnGamePreload(purpose, mode);
-
-            // If currently in a game, then deinitialize.
-            if (_inGame)
-            {
-                Deinitialize();
-            }
-        }
-
-        /// <summary>
         /// Called by the game when a GameMode is done being loaded.
         /// </summary>
         protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
         {
 	        base.OnGameLoadingComplete(purpose, mode);
 
-            // If currently in a game, then deinitialize.
-            if (_inGame)
-            {
-                Deinitialize();
-            }
-
-            // If started a game, then initialize.
+            // Initialize or deinitialize based on game mode.
             if (mode == GameMode.Game)
             {
                 Initialize();
+            }
+            else
+            {
+                Deinitialize();
             }
         }
 
@@ -147,9 +128,6 @@ namespace ChangeCompany
 
                 // Listen for language change events.
                 _localizationManager.onActiveDictionaryChanged += LocalizationManager_onActiveDictionaryChanged;
-
-                // In a game.  Set this last because this allows OnUpdate to run and everything else should be initialized before then.
-                _inGame = true;
             }
             catch(Exception ex)
             {
@@ -165,9 +143,6 @@ namespace ChangeCompany
             try
             {
                 Mod.log.Info($"{nameof(ProductionBalanceUISystem)}.{nameof(Deinitialize)}");
-
-                // Not in a game.  Set this first to stop OnUpdate from running while everything is being cleaned up.
-                _inGame = false;
 
                 // Disable production balance activation key.
                 ProxyAction activationKeyAction = Mod.ModSettings.GetAction(ModSettings.ProductionBalanceActivationKeyActionName);
@@ -199,8 +174,8 @@ namespace ChangeCompany
         {
             base.OnUpdate();
 
-            // If not in a game, do nothing.
-            if (!_inGame)
+            // Skip if not in a game.
+            if (GameManager.instance.gameMode != GameMode.Game)
             {
                 return;
             }

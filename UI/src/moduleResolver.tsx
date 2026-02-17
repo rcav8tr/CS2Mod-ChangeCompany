@@ -70,11 +70,14 @@ export class ModuleResolver
     // Define SCSS modules.
     private _companySectionClasses:         any;
     private _dropdownClasses:               any;
+    private _ellipsisTextInput:             any;
+    private _ellipsisTextInputTheme:        any;
     private _iconButtonClasses:             any;
     private _infoRowClasses:                any;
     private _panelClasses:                  any;
     private _panelThemeClasses:             any;
     private _roundHighlightButtonClasses:   any;
+    private _sipTextInput:                  any;
     private _tintedIconClasses:             any;
     private _toolButtonClasses:             any;
 
@@ -92,11 +95,14 @@ export class ModuleResolver
     // Provide access to SCSS modules.
     public get CompanySectionClasses():         Theme | any { return this._companySectionClasses        ?? (this._companySectionClasses         = getModule("game-ui/game/components/selected-info-panel/selected-info-sections/building-sections/company-section/company-section.module.scss", "classes")); }
     public get DropdownClasses():               Theme | any { return this._dropdownClasses              ?? (this._dropdownClasses               = getModule("game-ui/menu/themes/dropdown.module.scss",                                                                                         "classes")); }
+    public get EllipsisTextInput():             Theme | any { return this._ellipsisTextInput            ?? (this._ellipsisTextInput             = getModule("game-ui/common/input/text/ellipsis-text-input/ellipsis-text-input.module.scss",                                                    "classes")); }
+    public get EllipsisTextInputTheme():        Theme | any { return this._ellipsisTextInputTheme       ?? (this._ellipsisTextInputTheme        = getModule("game-ui/common/input/text/ellipsis-text-input/themes/default.module.scss",                                                         "classes")); }
     public get IconButtonClasses():             Theme | any { return this._iconButtonClasses            ?? (this._iconButtonClasses             = getModule("game-ui/common/input/button/icon-button.module.scss",                                                                              "classes")); }
     public get InfoRowClasses():                Theme | any { return this._infoRowClasses               ?? (this._infoRowClasses                = getModule("game-ui/game/components/selected-info-panel/shared-components/info-row/info-row.module.scss",                                      "classes")); }
     public get PanelClasses():                  Theme | any { return this._panelClasses                 ?? (this._panelClasses                  = getModule("game-ui/common/panel/panel.module.scss",                                                                                           "classes")); }
     public get PanelThemeClasses():             Theme | any { return this._panelThemeClasses            ?? (this._panelThemeClasses             = getModule("game-ui/common/panel/themes/default.module.scss",                                                                                  "classes")); }
     public get RoundHighlightButtonClasses():   Theme | any { return this._roundHighlightButtonClasses  ?? (this._roundHighlightButtonClasses   = getModule("game-ui/common/input/button/themes/round-highlight-button.module.scss",                                                            "classes")); }
+    public get SIPTextInput():                  Theme | any { return this._sipTextInput                 ?? (this._sipTextInput                  = getModule("game-ui/game/components/selected-info-panel/shared-components/text-input/text-input.module.scss",                                  "classes")); }
     public get TintedIconClasses():             Theme | any { return this._tintedIconClasses            ?? (this._tintedIconClasses             = getModule("game-ui/common/image/tinted-icon.module.scss",                                                                                     "classes")); }
     public get ToolButtonClasses():             Theme | any { return this._toolButtonClasses            ?? (this._toolButtonClasses             = getModule("game-ui/game/components/tool-options/tool-button/tool-button.module.scss",                                                         "classes")); }
 }

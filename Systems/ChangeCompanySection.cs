@@ -1,7 +1,5 @@
 ﻿using Colossal.Entities;
-using Colossal.Serialization.Entities;
 using Colossal.UI.Binding;
-using Game;
 using Game.Buildings;
 using Game.Common;
 using Game.Economy;
@@ -97,21 +95,15 @@ namespace ChangeCompany
         }
 
         /// <summary>
-        /// Called when a game, main menu, editor, etc. is about to be loaded.
+        /// Called by the game when the world is ready.
         /// </summary>
-        protected override void OnGamePreload(Purpose purpose, GameMode mode)
+        protected override void OnWorldReady()
         {
-            base.OnGamePreload(purpose, mode);
-
-            // Must be a game about to be loaded.
-            if (mode != GameMode.Game)
-            {
-                return;
-            }
-
             try
             {
-                Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(OnGamePreload)}");
+                Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(OnWorldReady)}");
+
+                base.OnWorldReady();
 
                 // Get possible company infos for commercial, extractor, industrial, office, and storage company prefabs.
                 // At the time OnCreate is called, IndustrialProcessData is not yet initialized.
@@ -170,8 +162,6 @@ namespace ChangeCompany
 
             try
             {
-                Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(GetPossibleCompanyInfos)}");
-
                 // Get component lookup for industrial process data.
                 ComponentLookup<IndustrialProcessData> componentLookupIndustrialProcessData = CheckedStateRef.GetComponentLookup<IndustrialProcessData>();  
                 componentLookupIndustrialProcessData.Update(ref CheckedStateRef);
@@ -238,11 +228,11 @@ namespace ChangeCompany
                 companyInfosStorage    = new(companyPrefabsStorage,    componentLookupIndustrialProcessData);
 
                 // Info logging.
-                Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(GetPossibleCompanyInfos)} Company infos for Commercial = {companyInfosCommercial.Count,3}");
-                Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(GetPossibleCompanyInfos)} Company infos for Extractor  = {companyInfosExtractor .Count,3}");
-                Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(GetPossibleCompanyInfos)} Company infos for Industrial = {companyInfosIndustrial.Count,3}");
-                Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(GetPossibleCompanyInfos)} Company infos for Office     = {companyInfosOffice    .Count,3}");
-                Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(GetPossibleCompanyInfos)} Company infos for Storage    = {companyInfosStorage   .Count,3}");
+                Mod.log.Info($"Company infos for Commercial = {companyInfosCommercial.Count,3}");
+                Mod.log.Info($"Company infos for Extractor  = {companyInfosExtractor .Count,3}");
+                Mod.log.Info($"Company infos for Industrial = {companyInfosIndustrial.Count,3}");
+                Mod.log.Info($"Company infos for Office     = {companyInfosOffice    .Count,3}");
+                Mod.log.Info($"Company infos for Storage    = {companyInfosStorage   .Count,3}");
 
                 // Get the industrial and office company infos by output resource.
                 // Some output resources have more than one company info.

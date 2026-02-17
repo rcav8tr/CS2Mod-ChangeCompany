@@ -25,9 +25,6 @@ export const CompanySelector = (props: CompanySelectorProps) =>
     const SpecialCompanyIndexRandom: number = 1000;
     const SpecialCompanyIndexRemove: number = 1001;
 
-    // Function to join classes.
-    function joinClasses(...classes: any) { return classes.join(" "); }
-
     // Function to handle change in selected company.
     function selectedCompanyChanged(specialType: SpecialCompanyType, companyInfoIndex: number)
     {
@@ -79,7 +76,7 @@ export const CompanySelector = (props: CompanySelectorProps) =>
                 // Right has nothing, input1, or input1+input2 resources.
                 const dropdownItemContent: JSX.Element =
                     <div className={styles.changeCompanyDropdownRow}>
-                        <div className={joinClasses(ModuleResolver.instance.InfoRowClasses.left, styles.changeCompanyDropdownItemLeft)}>
+                        <div className={`${ModuleResolver.instance.InfoRowClasses.left} ${styles.changeCompanyDropdownItemLeft}`}>
                             <ResourceIconLabel specialCompanyType={companyInfo.specialType} resource={resourceOutput} trailingConcatenator={false} />
                         </div>
                         {hasInput1 &&

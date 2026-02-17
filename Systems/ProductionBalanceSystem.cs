@@ -6,6 +6,7 @@ using Game.Common;
 using Game.Companies;
 using Game.Economy;
 using Game.Prefabs;
+using Game.SceneFlow;
 using Game.Simulation;
 using Game.Tools;
 using Game.Vehicles;
@@ -279,9 +280,8 @@ namespace ChangeCompany
         NativeArray<NativeList<CompanyDetail>> _companyDetailsJobIndustrial;
         NativeArray<NativeList<CompanyDetail>> _companyDetailsJobOffice;
 
-        // Flags to enable OnUpdate to run.
-        private bool _inGame;           // Whether or not application is in a game (i.e. as opposed to main menu, editor, etc.).
-        private bool _initialized;      // Whether or not this system is initialized.
+        // Whether or not this system is initialized.
+        private bool _initialized;
 
         // Data and lookups for computing information about a company.
         private ResourcePrefabs                     _resourcePrefabs;
@@ -320,12 +320,12 @@ namespace ChangeCompany
         [Preserve]
         protected override void OnCreate()
         { 
-            Mod.log.Info($"{nameof(ProductionBalanceSystem)}.{nameof(OnCreate)}");
-
-            base.OnCreate();
-            
             try
             {
+                Mod.log.Info($"{nameof(ProductionBalanceSystem)}.{nameof(OnCreate)}");
+
+                base.OnCreate();
+            
                 // Get other systems.
                 _changeCompanySection = World.GetOrCreateSystemManaged<ChangeCompanySection>();
                 _changeCompanySystem  = World.GetOrCreateSystemManaged<ChangeCompanySystem >();
@@ -344,8 +344,7 @@ namespace ChangeCompany
                     _companyDetailsJobOffice    [i] = new(32, Allocator.Persistent);
                 }
 
-                // Initialize miscellaneous.
-                _inGame = false;
+                // Initialized.
                 _initialized = true;
             }
             catch (Exception ex)
@@ -386,18 +385,6 @@ namespace ChangeCompany
         }
 
         /// <summary>
-        /// Called by the game when a GameMode is about to be loaded.
-        /// </summary>
-        [Preserve]
-        protected override void OnGamePreload(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
-        {
-            base.OnGamePreload(purpose, mode);
-
-            // Not in a game.
-            _inGame = false;
-        }
-
-        /// <summary>
         /// Called by the game when a GameMode is done being loaded.
         /// </summary>
         [Preserve]
@@ -412,18 +399,9 @@ namespace ChangeCompany
                 _productionBalanceInfoIndustrial = new(true);
                 _productionBalanceInfoOffice     = new(false);
 
-                // In a game.
-                // Needs to be set before balance next checks.
-                _inGame = true;
-
                 // Initialize production balance next check.
                 SetProductionBalanceNextCheckIndustrial();
                 SetProductionBalanceNextCheckOffice();
-            }
-            else
-            {
-                // Not in a game.
-                _inGame = false;
             }
         }
 
@@ -434,14 +412,8 @@ namespace ChangeCompany
         [Preserve]
         protected override void OnUpdate()
         {
-            // Must be initialized.
-            if (!_initialized)
-            {
-                return;
-            }
-
-            // Must be in a game.
-            if (!_inGame)
+            // Skip if not initialized or not in a game.
+            if (!_initialized || GameManager.instance.gameMode != GameMode.Game)
             {
                 return;
             }
@@ -1100,7 +1072,7 @@ namespace ChangeCompany
             lock (productionBalanceNextCheckLock)
             {
                 // Check if in game and production balance is enabled.
-                if (_inGame && productionBalanceEnabled)
+                if (GameManager.instance.gameMode == GameMode.Game && productionBalanceEnabled)
                 {
                     // Production balance is enabled.
                     // Production balance next check is performed at current game date/time plus check interval minutes.

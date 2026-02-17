@@ -32,9 +32,10 @@ namespace ChangeCompany
         // Other systems.
         private EndFrameBarrier         _endFrameBarrier;
         private CompanyMoveAwaySystem   _companyMoveAwaySystem;
+        private SelectedInfoUISystem    _selectedInfoUISystem;
 
-        // C# to UI bindings.
-        private ValueBinding<bool> _bindingCompanyLocked;
+        // Section properties are for the company on the selected property.
+        private bool _sectionPropertyCompanyLocked;
 
         // Selected company entity.
         private Entity _selectedCompanyEntity;
@@ -61,6 +62,7 @@ namespace ChangeCompany
                 // Other systems.
                 _endFrameBarrier       = World.GetOrCreateSystemManaged<EndFrameBarrier      >();
                 _companyMoveAwaySystem = World.GetOrCreateSystemManaged<CompanyMoveAwaySystem>();
+                _selectedInfoUISystem  = World.GetOrCreateSystemManaged<SelectedInfoUISystem >();
 
                 // Get the field for the company move away query on the CompanyMoveAwaySystem.
                 FieldInfo companyQueryField = typeof(CompanyMoveAwaySystem).GetField("m_CompanyQuery", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -92,12 +94,6 @@ namespace ChangeCompany
                     ComponentType.Exclude<Deleted               >(),
                     ComponentType.Exclude<Temp                  >(),
                     ComponentType.Exclude<CompanyLocked         >() ));
-
-                // Add bindings for C# to UI.
-                // Need to use a binding for company locked status instead of OnWriteProperties because
-                // OnWriteProperties is executed only while the simulation is running
-                // and it is desired to update the company locked status even when paused.
-                AddBinding(_bindingCompanyLocked = new ValueBinding<bool>(ModAssemblyInfo.Name, "CompanyLocked", false));
 
                 // Add bindings for UI to C#.
                 AddBinding(new TriggerBinding      (ModAssemblyInfo.Name, "ToggleCompanyLockedClicked",     ToggleCompanyLockedClicked    ));
@@ -156,7 +152,7 @@ namespace ChangeCompany
         [Preserve]
         protected override void Reset()
         {
-            // Nothing to do here because there are no section properties, but implementation is required.
+            _sectionPropertyCompanyLocked = false;
         }
 
         /// <summary>
@@ -207,9 +203,6 @@ namespace ChangeCompany
 
             // Section is visible.
             visible = true;
-
-            // Update company locked status in UI.
-            _bindingCompanyLocked.Update(EntityManager.HasComponent<CompanyLocked>(_selectedCompanyEntity));
         }
 
         /// <summary>
@@ -218,7 +211,7 @@ namespace ChangeCompany
         [Preserve]
         protected override void OnProcess()
         {
-            // Nothing to do here because there are no section properties, but implementation is required.
+            _sectionPropertyCompanyLocked = EntityManager.HasComponent<CompanyLocked>(_selectedCompanyEntity);
         }
 
         /// <summary>
@@ -227,7 +220,9 @@ namespace ChangeCompany
         [Preserve]
         public override void OnWriteProperties(IJsonWriter writer)
         {
-            // Nothing to do here because there are no section properties, but implementation is required.
+            // Write the section properties.
+            writer.PropertyName("companyLocked");
+            writer.Write(_sectionPropertyCompanyLocked);
         }
 
         /// <summary>
@@ -254,8 +249,8 @@ namespace ChangeCompany
                     _endFrameBarrier.CreateCommandBuffer().RemoveComponent<CompanyLocked>(_selectedCompanyEntity);
                 }
 
-                // Send the new company locked status to the UI.
-                _bindingCompanyLocked.Update(companyLocked);
+                // Update the section so the new override is displayed.
+                _selectedInfoUISystem.SetDirty();
             }
             catch (Exception ex)
             {
@@ -314,10 +309,10 @@ namespace ChangeCompany
                         }
                     }
                 }
-                
-                // Update company locked status in UI.
+
+                // Update the section so the new override is displayed.
                 // The company on the selected property should have been handled by the logic above.
-                _bindingCompanyLocked.Update(lockAll);
+                _selectedInfoUISystem.SetDirty();
             }
             catch (Exception ex)
             {
@@ -339,6 +334,9 @@ namespace ChangeCompany
             {
                 // Remove the locked component from every locked company.
                 _endFrameBarrier.CreateCommandBuffer().RemoveComponent<CompanyLocked>(_companyQueryLocked, EntityQueryCaptureMode.AtPlayback);
+
+                // Update the section so the new override is displayed.
+                _selectedInfoUISystem.SetDirty();
             }
             catch (Exception ex)
             {

@@ -1,13 +1,17 @@
 ﻿using Colossal.Entities;
+using Colossal.Serialization.Entities;
 using Game;
 using Game.Agents;
+using Game.Areas;
 using Game.Buildings;
 using Game.Common;
 using Game.Companies;
 using Game.Net;
 using Game.Notifications;
+using Game.Objects;
 using Game.Pathfind;
 using Game.Prefabs;
+using Game.SceneFlow;
 using Game.Simulation;
 using Game.Tools;
 using Game.Triggers;
@@ -22,6 +26,8 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Scripting;
 using AreaType = Game.Zones.AreaType;
+using Lot      = Game.Areas.Lot;
+using SubArea  = Game.Areas.SubArea;
 
 namespace ChangeCompany
 {
@@ -59,9 +65,8 @@ namespace ChangeCompany
         // Company changed notification icon.
         private Entity _companyChangedNotificationIcon;
 
-        // Miscellaneous.
-        private bool _inGame;       // Whether or not application is in a game (i.e. as opposed to main menu, editor, etc.).
-        private bool _initialized;  // Whether or not this system is initialized.
+        // Whether or not this system is initialized.
+        private bool _initialized;
 
         /// <summary>
         /// Initialize this system.
@@ -69,12 +74,12 @@ namespace ChangeCompany
         [Preserve]
         protected override void OnCreate()
         { 
-            Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(OnCreate)}");
-
-            base.OnCreate();
-            
             try
             {
+                Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(OnCreate)}");
+
+                base.OnCreate();
+
                 // Get other systems.
                 _changeCompanySection   = World.GetOrCreateSystemManaged<ChangeCompanySection>();
                 _endFrameBarrier        = World.GetOrCreateSystemManaged<EndFrameBarrier     >();
@@ -166,8 +171,7 @@ namespace ChangeCompany
                     _companyChangedNotificationIcon = _prefabSystem.GetEntity(notificationIconPrefab);
                 }
 
-                // Initialize miscellaneous.
-                _inGame = false;
+                // Initialized.
                 _initialized = true;
             }
             catch (Exception ex)
@@ -177,22 +181,10 @@ namespace ChangeCompany
         }
 
         /// <summary>
-        /// Called by the game when a GameMode is about to be loaded.
-        /// </summary>
-        [Preserve]
-        protected override void OnGamePreload(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
-        {
-            base.OnGamePreload(purpose, mode);
-
-            // Not in a game.
-            _inGame = false;
-        }
-
-        /// <summary>
         /// Called by the game when a GameMode is done being loaded.
         /// </summary>
         [Preserve]
-        protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
+        protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
         {
             base.OnGameLoadingComplete(purpose, mode);
 
@@ -207,14 +199,6 @@ namespace ChangeCompany
 
                 // Initialize random numbers.
                 _randomSeed = RandomSeed.Next();
-
-                // In a game.  Set this last because this allows OnUpdate to run and everything else should be initialized before then.
-                _inGame = true;
-            }
-            else
-            {
-                // Not in a game.
-                _inGame = false;
             }
         }
 
@@ -244,19 +228,13 @@ namespace ChangeCompany
         }
 
         /// <summary>
-        /// Called every frame, even when at the main menu.
+        /// Called once every frame, even when at the main menu.
         /// </summary>
         [Preserve]
         protected override void OnUpdate()
         {
-            // Must be initialized.
-            if (!_initialized)
-            {
-                return;
-            }
-
-            // Must be in a game.
-            if (!_inGame)
+            // Skip if not initialized or not in a game.
+            if (!_initialized || GameManager.instance.gameMode != GameMode.Game)
             {
                 return;
             }
@@ -346,10 +324,16 @@ namespace ChangeCompany
             EntityCommandBuffer entityCommandbuffer = _endFrameBarrier.CreateCommandBuffer();
 
             // Move away the current company of the property.
-            bool companyWasLocked = MoveAwayCompany(propertyEntity, propertyPrefab, entityCommandbuffer);
+            Entity currentCompany = MoveAwayCompany(propertyEntity, propertyPrefab, entityCommandbuffer);
+
+            // Get whether or not the company to move away (if any) was locked.
+            bool companyWasLocked = EntityManager.HasComponent<CompanyLocked>(currentCompany);
+
+            // Get workplaces override of the company to move away (if any).
+            bool companyHadWorkplacesOverride = EntityManager.TryGetComponent(currentCompany, out WorkplacesOverride workplacesOverride);
             
             // Create a new company and assign it to the property.
-            CreateCompany(newCompanyPrefab, propertyEntity, propertyPrefab, propertyType, companyWasLocked, entityCommandbuffer);
+            CreateCompany(newCompanyPrefab, propertyEntity, propertyPrefab, propertyType, companyWasLocked, companyHadWorkplacesOverride, workplacesOverride, entityCommandbuffer);
 
             // Display company changed notification icon on the property.
             DisplayCompanyChangedNotificationIcon(propertyEntity);
@@ -378,7 +362,7 @@ namespace ChangeCompany
             EntityCommandBuffer entityCommandbuffer = _endFrameBarrier.CreateCommandBuffer();
 
             // Move away the current company of the property.
-            // When removing a company, do not care if the company was locked.
+            // When removing a company, do not care if the company was locked or had a workplaces override.
             MoveAwayCompany(propertyEntity, propertyPrefab, entityCommandbuffer);
 
             // If property is on the market, take property off the market.
@@ -476,7 +460,7 @@ namespace ChangeCompany
         /// <summary>
         /// Move away the current company of the property.
         /// </summary>
-        private bool MoveAwayCompany(Entity propertyEntity, Entity propertyPrefab, EntityCommandBuffer entityCommandbuffer)
+        private Entity MoveAwayCompany(Entity propertyEntity, Entity propertyPrefab, EntityCommandBuffer entityCommandbuffer)
         {
             // The logic below is similar to as if the game moved away the company,
             // except that the property is not put back on the market.
@@ -487,7 +471,7 @@ namespace ChangeCompany
             {
                 // This is not an error.
                 // It simply means there is no current company to move away.
-                return false;
+                return Entity.Null;
             }
 
             // Add the MovingAway and Deleted components to the company.
@@ -523,8 +507,8 @@ namespace ChangeCompany
             // The Deleted component on the company will prevent the company
             // from being used for anything before it is destroyed.
 
-            // Return whether or not the company is locked.
-            return EntityManager.HasComponent<CompanyLocked>(companyToMoveAway);
+            // Return the company to move away.
+            return companyToMoveAway;
         }
 
         /// <summary>
@@ -536,6 +520,8 @@ namespace ChangeCompany
             Entity propertyPrefab,
             PropertyType propertyType,
             bool companyWasLocked,
+            bool companyHadWorkplacesOverride,
+            WorkplacesOverride workplacesOverride,
             EntityCommandBuffer entityCommandbuffer)
         {
             // Spawn a new company using the ArchetypeData of the company prefab.
@@ -572,6 +558,8 @@ namespace ChangeCompany
                 propertyEntity,
                 propertyPrefab,
                 propertyType,
+                companyHadWorkplacesOverride,
+                workplacesOverride,
                 entityCommandbuffer);
 
             // If previous company was locked or option is set to lock after change, lock the new company.
@@ -607,6 +595,8 @@ namespace ChangeCompany
             Entity propertyEntity,
             Entity propertyPrefab,
             PropertyType propertyType,
+            bool companyHadWorkplacesOverride,
+            WorkplacesOverride workplacesOverride,
             EntityCommandBuffer entityCommandbuffer)
         {
             // Get SpawnableBuildingData for the property prefab.
@@ -636,15 +626,25 @@ namespace ChangeCompany
             // Add the new company to the property's Renter buffer.
             entityCommandbuffer.AppendToBuffer(propertyEntity, new Renter { m_Renter = newCompanyEntity });
 
-            // Set the initial max workers on the new company.
+            // Set the initial workers on the new company.
             // The CommercialAISystem and IndustrialAISystem may adjust the max workers up or down during simulation.
             // Storage companies do not have workers.
             if (propertyType != PropertyType.Storage)
             {
-                int companyMaxFittingWorkers = GetCompanyMaxFittingWorkers(
-                    newCompanyPrefab, propertyPrefab, propertyType, spawnableBuildingData, buildingPropertyData);
-                int maxWorkers = math.max(1, 2 * companyMaxFittingWorkers / 3);
-                entityCommandbuffer.SetComponent(newCompanyEntity, new WorkProvider { m_MaxWorkers = maxWorkers });
+                // Check if previous company had workplaces override and option is set to keep the override.
+                if (companyHadWorkplacesOverride && Mod.ModSettings.KeepWorkplacesOverrideAfterChange)
+                {
+                    // Add workplaces override and set initial workers from the override.
+                    entityCommandbuffer.AddComponent(newCompanyEntity, workplacesOverride);
+                    entityCommandbuffer.SetComponent(newCompanyEntity, new WorkProvider { m_MaxWorkers = workplacesOverride.Value });
+                }
+                else
+                {
+                    // Set initial workers based on the property and new company.
+                    // If Realistic Workplaces and Households mod is present, it will overwrite WorkProvider.m_MaxWorkers within 1 frame.
+                    int initialWorkers = GetCompanyInitialWorkplaces(propertyEntity, propertyPrefab, newCompanyPrefab);
+                    entityCommandbuffer.SetComponent(newCompanyEntity, new WorkProvider { m_MaxWorkers = initialWorkers });
+                }
             }
 
             // Remove PropertyOnMarket from the property.
@@ -658,6 +658,114 @@ namespace ChangeCompany
 
             // Do post-change initialization on this property.
             _postChangePropertyEntities.Add(propertyEntity);
+        }
+
+        /// <summary>
+        /// Get the initial workplaces for a company.
+        /// Logic adapted from PropertyProcessingSystem.PropertyRentJob for initializing WorkProvider.m_MaxWorkers.
+        /// </summary>
+        public int GetCompanyInitialWorkplaces(Entity propertyEntity, Entity propertyPrefab, Entity companyPrefab)
+        {
+            // Compute company initial workers.
+            int companyMaxFittingWorkers = GetCompanyMaxFittingWorkers(propertyEntity, propertyPrefab, companyPrefab);
+            return math.max(1, 2 * companyMaxFittingWorkers / 3);
+        }
+
+        /// <summary>
+        /// Get company max fitting workers.
+        /// Logic adapted from CompanyUtils.GetCompanyMaxFittingWorkers.
+        /// </summary>
+        private int GetCompanyMaxFittingWorkers(Entity propertyEntity, Entity propertyPrefab, Entity companyPrefab)
+        {
+            // Check for commercial.
+			if (EntityManager.TryGetComponent(companyPrefab, out ServiceCompanyData serviceCompanyData))
+			{
+                // Get needed data.
+                if (EntityManager.TryGetComponent(propertyPrefab, out BuildingData buildingData) &&
+                    EntityManager.TryGetComponent(propertyPrefab, out BuildingPropertyData buildingPropertyData))
+                {
+                    int buildingLevel = GetBuildingLevel(propertyPrefab);
+				    return CompanyUtils.GetCommercialMaxFittingWorkers(buildingData, buildingPropertyData, buildingLevel, serviceCompanyData);
+                }
+
+                // This should never happen.
+                return 1;
+			}
+
+            // Check for extractor.
+            // Extractors are not valid for change company, but are valid for company workplaces.
+			if (EntityManager.HasComponent<ExtractorCompanyData>(companyPrefab))
+			{
+                // Get needed data.
+                if (EntityManager.TryGetComponent(companyPrefab, out IndustrialProcessData industrialProcessData1))
+                {
+                    float area = GetExtractorArea(propertyEntity);
+                    int extractorFittingWorkers = CompanyUtils.GetExtractorFittingWorkers(area, 1f, industrialProcessData1);
+    				return math.max(1, extractorFittingWorkers);
+                }
+
+                // This should never happen.
+                return 1;
+			}
+
+            // Check for industrial, which includes office.
+			if (EntityManager.TryGetComponent(companyPrefab, out IndustrialProcessData industrialProcessData2))
+			{
+                // Get needed data.
+                if (EntityManager.TryGetComponent(propertyPrefab, out BuildingData buildingData) &&
+                    EntityManager.TryGetComponent(propertyPrefab, out BuildingPropertyData buildingPropertyData))
+                {
+                    int buildingLevel = GetBuildingLevel(propertyPrefab);
+				    return CompanyUtils.GetIndustrialAndOfficeFittingWorkers(buildingData, buildingPropertyData, buildingLevel, industrialProcessData2);
+                }
+
+                // This should never happen.
+                return 1;
+			}
+
+            // This should never happen.
+			return 1;
+        }
+
+        /// <summary>
+        /// Get building level for a property prefab.
+        /// Logic adapted from CompanyUtils.GetCompanyMaxFittingWorkers.
+        /// </summary>
+        private int GetBuildingLevel(Entity propertyPrefab)
+        {
+			if (EntityManager.TryGetComponent(propertyPrefab, out SpawnableBuildingData spawnableBuildingData))
+			{
+				return spawnableBuildingData.m_Level;
+			}
+            return 1;
+        }
+
+        /// <summary>
+        /// Get lot area for an extractor.
+        /// Logic adapted from CompanyUtils.GetCompanyMaxFittingWorkers.
+        /// </summary>
+        private float GetExtractorArea(Entity propertyEntity)
+        {
+            // Extractor must have Attached.
+			if (EntityManager.TryGetComponent(propertyEntity, out Attached attached))
+			{
+                // Get needed lookups.
+                BufferLookup<SubArea         > bufferLookupSubArea          = SystemAPI.GetBufferLookup<SubArea         >(true);
+                BufferLookup<InstalledUpgrade> bufferLookupInstalledUpgrade = SystemAPI.GetBufferLookup<InstalledUpgrade>(true);
+                ComponentLookup<Lot     >      componentLookupLot           = SystemAPI.GetComponentLookup<Lot     >(true);
+                ComponentLookup<Geometry>      componentLookupGeometry      = SystemAPI.GetComponentLookup<Geometry>(true);
+
+                // Return the extractor area.
+				return ExtractorAISystem.GetArea(
+                    attached.m_Parent,
+                    ref bufferLookupSubArea,
+                    ref bufferLookupInstalledUpgrade,
+                    ref componentLookupLot,
+                    ref componentLookupGeometry);
+			}
+
+            // This should never happen.
+            return 0f;
         }
 
         /// <summary>
@@ -725,57 +833,6 @@ namespace ChangeCompany
             // Compute and return rent price per renter.
             return PropertyUtils.GetRentPricePerRenter(
                 buildingPropertyData, spawnableBuildingData.m_Level, lotSize, landValueBase, areaType, ref economyParameterData);
-        }
-
-        /// <summary>
-        /// Get company max fitting workers.
-        /// Logic adapted from CompanyUtils.GetCompanyMaxFittingWorkers.
-        /// </summary>
-        private int GetCompanyMaxFittingWorkers(
-            Entity newCompanyPrefab,
-            Entity propertyPrefab,
-            PropertyType propertyType,
-            SpawnableBuildingData spawnableBuildingData,
-            BuildingPropertyData buildingPropertyData)
-        {
-            // Check for building data.
-            if (EntityManager.TryGetComponent(propertyPrefab, out BuildingData buildingData))
-            {
-                // Get max fitting workers for commercial.
-                if (propertyType == PropertyType.Commercial)
-                {
-                    if (EntityManager.TryGetComponent(newCompanyPrefab, out ServiceCompanyData serviceCompanyData))
-                    {
-                        return CompanyUtils.GetCommercialMaxFittingWorkers(
-                            buildingData, buildingPropertyData, spawnableBuildingData.m_Level, serviceCompanyData);
-                    }
-                    else
-                    {
-                        // This should never happen.
-                        Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetCompanyMaxFittingWorkers)} Unable to get service company data for company prefab [{_prefabSystem.GetPrefabName(newCompanyPrefab)}].");
-                        return 1;
-                    }
-                }
-
-                // Get max fitting workers for industrial, which includes office.
-                if (EntityManager.TryGetComponent(newCompanyPrefab, out IndustrialProcessData industrialProcessData))
-                {
-                    return CompanyUtils.GetIndustrialAndOfficeFittingWorkers(
-                        buildingData, buildingPropertyData, spawnableBuildingData.m_Level, industrialProcessData);
-                }
-                else
-                {
-                    // This should never happen.
-                    Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetCompanyMaxFittingWorkers)} Unable to get industrial process data for company prefab [{_prefabSystem.GetPrefabName(newCompanyPrefab)}]");
-                    return 1;
-                }
-            }
-            else
-            {
-                // This should never happen.
-                Mod.log.Info($"{nameof(ChangeCompanySystem)}.{nameof(GetCompanyMaxFittingWorkers)} Unable to get building data for property prefab [{_prefabSystem.GetPrefabName(propertyPrefab)}]");
-                return 1;
-            }
         }
 
         /// <summary>

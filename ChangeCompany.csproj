@@ -9,8 +9,8 @@
         <!--The file where mod information which is required for publishing mod on PDX mods are stored-->
         <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
         <Title>Change Company</Title>
-        <Version>3.2.0</Version>
-        <Description>Mod with 3 main features: Change Company, Production Balance, and Lock Company.</Description>
+        <Version>4.0.0</Version>
+        <Description>Mod with 4 main features: Change Company, Production Balance, Lock Company, and Company Workplaces.</Description>
         <Copyright>Copyright © 2025-2026</Copyright>
         <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
         <DefaultItemExcludes>UI\node_modules\**;$(DefaultItemExcludes)</DefaultItemExcludes>
@@ -119,6 +119,9 @@
     <Import Project="Properties\PublishConfiguration.csproj" />
     <ItemGroup>
         <None Include="Properties\PublishConfiguration.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+      <PackageReference Include="Lib.Harmony" Version="2.2.2" />
     </ItemGroup>
     
     <ItemGroup>

@@ -1,8 +1,9 @@
 ﻿# Main Features
-The **Change Company** mod includes 3 main features:
+The **Change Company** mod includes 4 main features:
 - **Change Company**:  Allows you to change the company for a mixed residential, commercial, industrial, storage, or office building.
 - **Production Balance**:  Automatically balances production of industrial and office resources.
 - **Lock Company**:  Allows you to lock companies to prevent them from moving away.
+- **Company Workplaces**:  Allows you to override the number of workplaces for a company.
 
 These features are described in the following sections.
 
@@ -34,16 +35,20 @@ To change a company:
 - The change is immediate, even if the simulation is paused.
 
 Upon changing a company to a new company:
-- All employees of any current company are layed off.
+- All employees of any old company are layed off.
   The new company will hire its own employees, which may or may not be the same employees that were layed off.
+- If the old company was individually locked (see **Lock Company** below), the new company will be individually locked.
+- If the old company had a workplaces override and the **Keep Workplaces Override After Change** option is set (see **Options** below), the override will remain.
+  If the option is not set, the override will be lost.
 - If the building has no custom name, the building will be named according to the brand of the new company.
   If the building has a custom name, the custom name will be retained after the company is changed.
   To restore a building name to its default (i.e. company brand and address), change the building name to blank.
-- If the current company was individually locked (see **Lock Company** below), the new company will be individually locked.
 - The new company operates the same as if the game assigned the company to the building.
 
 Upon removing a company:
-- All employees of the current company are layed off.
+- All employees of the old company are layed off.
+- If the old company was individually locked, the lock is lost.
+- If the old company had a workplaces override, the override is lost.
 - Once the simulation runs, the building is placed back on the market and the game may assign a new company to the building.
 - The building operates the same as if the game created the building without a company.
   The game will use its normal logic to assign a new company to the building
@@ -77,6 +82,7 @@ once for industrial resources and once for office resources:
 - Determine the resource that has the highest deficit.
 - Among the companies that produce the resource with the highest surplus, the company with the lowest total worth is chosen.
 - Automatically change the chosen company to a company that produces the highest deficit.
+  This company change is the same as described above for **Change Company**.
 
 Achieveing balance may take several game minutes to a few game months depending on factors like:
 - **Check Interval**.  A higher interval takes longer.
@@ -150,6 +156,29 @@ The **Lock Company** feature has the following restrictions:
 - The company cannot be locked if the **Lock All Companies** option is set (see **Options** below).
 
 
+# Company Workplaces - Description
+The **Company Workplaces** feature allows you to override the number of workplaces for a company.
+
+To override the workplaces for a company:
+- Select a building to display its information.
+- If the building has a company with workplaces (see **Restrictions** below), the **Company Workplaces** section will be displayed.
+  This includes commercial, extractor, industrial, office, and signature buildings with companies.
+- The current override status of the company is displayed.
+- To override the total workplaces for this company, enter a new override (5 to 9999) and click **@@Apply**.
+- To remove an existing override, click **@@Reset**.
+  A default number of workplaces will be set initially.
+- After applying or removing an override, the simulation must run for the game to adjust the current number of employees.
+
+### Company Workplaces - Restrictions
+The **Company Workplaces** feature has the following restrictions:
+- Only companies with workplaces can be overridden (of course).
+  Note that industrial warehouses do not have workplaces.
+- The new override value must be from 5 to 9999.
+  5 is the minimum that the normal game logic allows.
+- Game logic normally adjusts workplaces up or down over time based on factors like: available storage, lot size, and building level.
+  A company workplaces override prevents this normal game logic.
+
+
 # Options
 The mod options are described below.
 
@@ -207,11 +236,11 @@ The options for **Lock Company** are described below.
 ### Lock After Change
 When this option is clear (default):
 - The new company is not automatically locked after the company is changed.
-- The new company is still automatically locked if the current company was locked before being changed.
+- The new company is still automatically locked if the old company was locked before being changed.
 
 When this option is set:
 - The new company is automatically locked after the company is changed.
-- This happens even if the current company was not locked before being changed.
+- This happens even if the old company was not locked before being changed.
 - This happens even if the **Lock All Companies** option (below) is set.
 
 ### Lock All Companies
@@ -230,16 +259,38 @@ Remove the lock on all individual companies in the city.
 This option is available only while in a game.
 
 
+## Company Workplaces
+The options for **Company Workplaces** are described below.
+
+### Keep Workplaces Override After Change
+When this option is clear (default):
+- After a company is changed, the new company does not keep any workplaces override that was present before the change.
+
+When this option is set:
+- After a company is changed, the new company keeps any workplaces override that was present before the change.
+
+### Remove All Overrides
+Remove workplaces override from all companies in the city.
+This option is available only while in a game.
+
+
 # Compatibility
-This mod is translated into all the languages supported by the base game.
+This mod is translated into all languages supported by the base game.
 
-This mod is not compatible with the **Economy Fixes** mod by nucleartux, which is currently broken.
-There are no known compatibility issues with any other mods.
+Compatibility with other mods:
+- This mod is not compatible with the **Economy Fixes** mod by nucleartux, which is currently broken.
+- This mod is compatible with **Realistic Workplaces and Households** (RWH) mod.
+  A workplaces override from this mod will override the company workplaces calculation from the RWH mod, as intended.
+  If an override from this mod is removed or this mod is disabled or unsubscribed, the RWH calculation will be restored when the simulation runs.
+- There are no known compatibility issues with any other mods.
 
-This mod can be safely disabled or unsubscribed at any time.
-- Disabling or unsubscribing this mod does not affect companies that were changed using this mod 
-  (e.g. a building will not revert to its previous company).
-- Disabling or unsubscribing this mod will cause all individual company locks to be lost when the game is saved.
+This mod can be safely disabled or unsubscribed at any time.  If this mod is disabled or unsubscribed:
+- Companies that were changed using this mod are not affected (i.e. a building will not revert to its previous company).
+- All individual company locks will be lost when the game is saved.
+- All workplace overrides will be lost when the game is saved.
+  Normal game logic will adjust the workplaces up or down over time from the last override value
+  (i.e. workplaces will NOT be initialized to a default value).
+  To initialize overridden companies to a default value, use the **Remove All Overrides** option before disabling or unsubscribing this mod.
 
 To receive an invitation to the Discord server for mod discussion, go to:  [https://discord.gg/HTav7ARPs2](https://discord.gg/HTav7ARPs2)
 
