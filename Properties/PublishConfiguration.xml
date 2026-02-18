@@ -180,8 +180,8 @@ To override the workplaces for a company:
 - If the building has a company with workplaces (see **Restrictions** below), the **Company Workplaces** section will be displayed.
   This includes commercial, extractor, industrial, office, and signature buildings with companies.
 - The current override status of the company is displayed.
-- To override the total workplaces for this company, enter a new override (5 to 9999) and click **@@Apply**.
-- To remove an existing override, click **@@Reset**.
+- To override the total workplaces for this company, enter a new override (5 to 9999) and click **Apply**.
+- To remove an existing override, click **Reset**.
   A default number of workplaces will be set initially.
 - After applying or removing an override, the simulation must run for the game to adjust the current number of employees.
 
@@ -341,7 +341,7 @@ The following mods were used in the development of this mod:
     <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/change-company.1808488/" />
 
     <!-- Version of the mod.  Copied from assembly Version. -->
-    <ModVersion Value="4.0.0" />
+    <ModVersion Value="4.0.1" />
 
     <!-- Recommended version of the base game to use the mod. -->
     <GameVersion Value="1.5.3*" />
@@ -355,8 +355,7 @@ The following mods were used in the development of this mod:
 
     <!-- Change log.  Copied from ChangeLog.md file.  Supports minimal markdown subset. -->
     <ChangeLog>
-- Add ability to override the number of workplaces at a company.
-- Minor code improvements.
+- Fix null reference error.
 </ChangeLog>
 
     <!-- External links.  Can be set multiple times. -->

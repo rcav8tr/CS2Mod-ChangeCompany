@@ -1,5 +1,7 @@
 ﻿using Colossal.Entities;
+using Colossal.Serialization.Entities;
 using Colossal.UI.Binding;
+using Game;
 using Game.Buildings;
 using Game.Common;
 using Game.Economy;
@@ -95,15 +97,21 @@ namespace ChangeCompany
         }
 
         /// <summary>
-        /// Called by the game when the world is ready.
+        /// Called when a game, main menu, editor, etc. is about to be loaded.
         /// </summary>
-        protected override void OnWorldReady()
+        protected override void OnGamePreload(Purpose purpose, GameMode mode)
         {
+            // Must be a game about to be loaded.
+            if (mode != GameMode.Game)
+            {
+                return;
+            }
+            
             try
             {
-                Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(OnWorldReady)}");
+                Mod.log.Info($"{nameof(ChangeCompanySection)}.{nameof(OnGamePreload)}");
 
-                base.OnWorldReady();
+                base.OnGamePreload(purpose, mode);
 
                 // Get possible company infos for commercial, extractor, industrial, office, and storage company prefabs.
                 // At the time OnCreate is called, IndustrialProcessData is not yet initialized.

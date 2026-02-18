@@ -1,2 +1,1 @@
-﻿- Add ability to override the number of workplaces at a company.
-- Minor code improvements.
+﻿- Fix null reference error.

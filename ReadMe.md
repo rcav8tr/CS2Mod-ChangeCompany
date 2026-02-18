@@ -164,8 +164,8 @@ To override the workplaces for a company:
 - If the building has a company with workplaces (see **Restrictions** below), the **Company Workplaces** section will be displayed.
   This includes commercial, extractor, industrial, office, and signature buildings with companies.
 - The current override status of the company is displayed.
-- To override the total workplaces for this company, enter a new override (5 to 9999) and click **@@Apply**.
-- To remove an existing override, click **@@Reset**.
+- To override the total workplaces for this company, enter a new override (5 to 9999) and click **Apply**.
+- To remove an existing override, click **Reset**.
   A default number of workplaces will be set initially.
 - After applying or removing an override, the simulation must run for the game to adjust the current number of employees.
 
