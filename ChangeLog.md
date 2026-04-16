@@ -1,1 +1,2 @@
-﻿- Fix null reference error.
+﻿- Remove workplaces override when a company has no property (e.g. after bulldozing).
+- Fix compatibility issue with Public Transport Vehicles Texts Decals [WE Module] that caused an error on exit to desktop.

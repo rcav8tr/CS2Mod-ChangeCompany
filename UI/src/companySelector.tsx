@@ -1,11 +1,11 @@
 ﻿import { useValue, trigger                      } from "cs2/api";
-import { Dropdown, DropdownItem, DropdownToggle } from "cs2/ui";
+import { Dropdown, DropdownToggle               } from "cs2/ui";
 
 import { bindingSelectedCompanyIndex            } from "bindings";
 import { CompanyInfo, SpecialCompanyType        } from "changeCompanyComponent";
 import   styles                                   from "companySelector.module.scss";
 import   mod                                      from "../mod.json";
-import { ModuleResolver                         } from "moduleResolver";
+import { DropdownItem, ModuleResolver           } from "moduleResolver";
 import { ResourceIconLabel                      } from "resourceIconLabel";
 
 // Define props for company selector dropdown.

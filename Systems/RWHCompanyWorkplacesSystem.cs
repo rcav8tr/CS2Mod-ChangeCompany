@@ -243,7 +243,7 @@ namespace ChangeCompany
             OverrideWorkplacesJob overrideWorkplacesJob = new()
             {
                 ComponentTypeHandleWorkplacesOverride = SystemAPI.GetComponentTypeHandle<WorkplacesOverride>(true),
-                ComponentTypeHandleWorkProvider = SystemAPI.GetComponentTypeHandle<WorkProvider>(false),
+                ComponentTypeHandleWorkProvider       = SystemAPI.GetComponentTypeHandle<WorkProvider      >(false),
             };
 
             // Schedule this job to run in parallel.

@@ -150,12 +150,20 @@ namespace ChangeCompany
                 activationKeyAction.onInteraction -= ActivationKeyInteraction;
 
                 // Stop listening for language change events.
-                _localizationManager.onActiveDictionaryChanged -= LocalizationManager_onActiveDictionaryChanged;
+                StopLanguageChangeListener();
             }
             catch(Exception ex)
             {
                 Mod.log.Error(ex);
             }
+        }
+
+        /// <summary>
+        /// Stop listening for language change events.
+        /// </summary>
+        public void StopLanguageChangeListener()
+        {
+            _localizationManager.onActiveDictionaryChanged -= LocalizationManager_onActiveDictionaryChanged;
         }
 
         /// <summary>

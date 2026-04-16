@@ -163,6 +163,11 @@ namespace ChangeCompany
                 defaultWorld.GetOrCreateSystemManaged<IndustrialWorkplacesSystem>();
                 defaultWorld.GetOrCreateSystemManaged<RWHCompanyWorkplacesSystem>();
 
+                // Create this mod's system to remove the workplaces override for companies with no PropertyRenter.
+                // Do in PreSimulation so the overrides are removed before any
+                // game systems in Simulation phase can assign the company to a property.
+                updateSystem.UpdateAt<RemoveWorkplacesOverrideSystem>(SystemUpdatePhase.PreSimulation);
+
 #if DEBUG
                 // Get localized text from the game where the value is or contains specific text.
                 //Colossal.Localization.LocalizationManager localizationManager = GameManager.instance.localizationManager;
@@ -211,6 +216,11 @@ namespace ChangeCompany
         {
             log.Info($"{nameof(Mod)}.{nameof(OnDispose)}");
 
+            // Stop listening for language change events to prevent null reference exception when accessing ModSettings.
+            // This can happen if this mod is disposed first and then another mod's OnDispose causes a language change.
+            // This mod could still be listening for the event, but ModSettings would be null when accessed.
+            World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<ProductionBalanceUISystem>()?.StopLanguageChangeListener();
+            
             // Unregister mod settings.
             ModSettings?.UnregisterInOptionsUI();
             ModSettings = null;

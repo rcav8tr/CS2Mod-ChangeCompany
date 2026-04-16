@@ -5,6 +5,8 @@ import { ControlPath                                                            
 import { getModule                                                                  } from "cs2/modding";
 import { ClassProps, FocusKey, FormattedParagraphsProps, InfoRowProps, TooltipProps } from "cs2/ui";
 
+// TBD Provide temporary replacement for DropdownItem from cs2/ui which is broken.
+export const DropdownItem = getModule("game-ui/common/input/dropdown/items/dropdown-item.tsx", "DropdownItem");
 
 export interface DescriptionTooltipProps extends Omit<TooltipProps, 'tooltip'>
 {
