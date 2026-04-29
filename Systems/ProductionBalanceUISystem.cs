@@ -121,12 +121,14 @@ namespace ChangeCompany
                 // Update panel in UI.
                 UpdateProductionBalanceUISettings();
 
-                // Enable production balance activation key.
+                // Disable then enable production balance activation key, if not already enabled.
+                DisableProductionBalanceActivationKey();
                 ProxyAction activationKeyAction = Mod.ModSettings.GetAction(ModSettings.ProductionBalanceActivationKeyActionName);
                 activationKeyAction.shouldBeEnabled = true;
                 activationKeyAction.onInteraction += ActivationKeyInteraction;
 
-                // Listen for language change events.
+                // Stop listening and then listen for language change events.
+                StopLanguageChangeListener();
                 _localizationManager.onActiveDictionaryChanged += LocalizationManager_onActiveDictionaryChanged;
             }
             catch(Exception ex)
@@ -145,9 +147,7 @@ namespace ChangeCompany
                 Mod.log.Info($"{nameof(ProductionBalanceUISystem)}.{nameof(Deinitialize)}");
 
                 // Disable production balance activation key.
-                ProxyAction activationKeyAction = Mod.ModSettings.GetAction(ModSettings.ProductionBalanceActivationKeyActionName);
-                activationKeyAction.shouldBeEnabled = false;
-                activationKeyAction.onInteraction -= ActivationKeyInteraction;
+                DisableProductionBalanceActivationKey();
 
                 // Stop listening for language change events.
                 StopLanguageChangeListener();
@@ -156,6 +156,16 @@ namespace ChangeCompany
             {
                 Mod.log.Error(ex);
             }
+        }
+
+        /// <summary>
+        /// Disable production balance activation key.
+        /// </summary>
+        private void DisableProductionBalanceActivationKey()
+        {
+            ProxyAction activationKeyAction = Mod.ModSettings.GetAction(ModSettings.ProductionBalanceActivationKeyActionName);
+            activationKeyAction.shouldBeEnabled = false;
+            activationKeyAction.onInteraction -= ActivationKeyInteraction;
         }
 
         /// <summary>

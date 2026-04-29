@@ -446,6 +446,7 @@ declare module "cs2/bindings" {
   	"Notification Panel": Action;
   	"Chirper Panel": Action;
   	"Lifepath Panel": Action;
+  	"Universal Mod Panel": Action;
   	"Event Journal Panel": Action;
   	"Radio Panel": Action;
   	"Photo Mode Panel": Action;
@@ -970,7 +971,8 @@ declare module "cs2/bindings" {
   	PhotoMode = "Game.UI.InGame.PhotoModePanel",
   	CinematicCamera = "Game.UI.InGame.CinematicCameraPanel",
   	Notifications = "Game.UI.InGame.NotificationsPanel",
-  	Glossary = "Game.UI.InGame.GlossaryPanel"
+  	Glossary = "Game.UI.InGame.GlossaryPanel",
+  	ModsMenu = "Game.UI.InGame.ModsMenuPanel"
   }
   export interface GamePanels {
   	[GamePanelType.InfoviewMenu]: InfoviewMenu;
@@ -986,6 +988,7 @@ declare module "cs2/bindings" {
   	[GamePanelType.PhotoMode]: PhotoModePanel;
   	[GamePanelType.Notifications]: NotificationsPanel;
   	[GamePanelType.Glossary]: GlossaryPanel;
+  	[GamePanelType.ModsMenu]: ModsMenuPanel;
   }
   export type GamePanel = TypeFromMap<GamePanels>;
   function toggleInfoviewMenu(): void;
@@ -1048,6 +1051,8 @@ declare module "cs2/bindings" {
   export interface CinematicCameraPanel {
   }
   export interface NotificationsPanel {
+  }
+  export interface ModsMenuPanel {
   }
   export interface GlossaryPanel extends TabbedGamePanel {
   }
@@ -1563,6 +1568,8 @@ declare module "cs2/bindings" {
   	glossaryPanelEconomyTab: string;
   	glossaryPanelInterfaceTab: string;
   	glossaryPanelServicesTab: string;
+  	universalModPanel: string;
+  	universalModPanelButton: string;
   }
   export interface Infoview {
   	entity: Entity;
@@ -2353,7 +2360,7 @@ declare module "cs2/bindings" {
   	modContentPrefab: string;
   }
   export interface PdxModsSection extends SelectedInfoSectionBase {
-  	modId: number | null;
+  	modId: string | null;
   }
   export interface DeveloperSection extends SelectedInfoSectionBase {
   	subsections: DeveloperSubsection[];
@@ -2415,6 +2422,9 @@ declare module "cs2/bindings" {
   export interface VisualCustomizeSection extends SelectedInfoSectionBase {
   	meshColor: ColorSet;
   	colorSets: ColorSet[];
+  	hasMeshColors: boolean;
+  	canBeHistorical: boolean;
+  	isHistorical: boolean;
   }
   export interface ScheduleSection extends SelectedInfoSectionBase {
   	schedule: number;
@@ -3496,7 +3506,7 @@ declare module "cs2/bindings" {
   	export { EventData, EventInfo, eventMap$, events$, onCloseJournal, onOpenJournal };
   }
   export namespace game {
-  	export { ChirperPanel, CinematicCameraPanel, CityInfoPanel, CityInfoPanelTab, EconomyPanel, EconomyPanelTab, GamePanel, GamePanelType, GamePanels, GameScreen, GlossaryPanel, GlossaryPanelTab, InfoviewMenu, JournalPanel, LayoutPosition, LifePathPanel, NotificationsPanel, PhotoModePanel, ProgressionPanel, ProgressionPanelTab, RadioPanel, StatisticsPanel, TabbedGamePanel, TransportationOverviewPanel, TransportationOverviewPanelTab, activeGamePanel$, activeGameScreen$, activePanelPosition$, blockingPanelActive$, canUseSaveSystem$, closeActiveGamePanel, closeGamePanel, setActiveGameScreen, setGlossaryCategory, showCityInfoPanel, showEconomyPanel, showFreeCameraScreen, showGamePanel, showGlossaryPanel, showLifePathDetail, showLifePathList, showMainScreen, showPauseScreen, showProgressionPanel, showTransportationOverviewPanel, toggleGamePanel, toggleInfoviewMenu, toggleLifePathPanel, toggleRadioPanel, toggleTransportationOverviewPanel };
+  	export { ChirperPanel, CinematicCameraPanel, CityInfoPanel, CityInfoPanelTab, EconomyPanel, EconomyPanelTab, GamePanel, GamePanelType, GamePanels, GameScreen, GlossaryPanel, GlossaryPanelTab, InfoviewMenu, JournalPanel, LayoutPosition, LifePathPanel, ModsMenuPanel, NotificationsPanel, PhotoModePanel, ProgressionPanel, ProgressionPanelTab, RadioPanel, StatisticsPanel, TabbedGamePanel, TransportationOverviewPanel, TransportationOverviewPanelTab, activeGamePanel$, activeGameScreen$, activePanelPosition$, blockingPanelActive$, canUseSaveSystem$, closeActiveGamePanel, closeGamePanel, setActiveGameScreen, setGlossaryCategory, showCityInfoPanel, showEconomyPanel, showFreeCameraScreen, showGamePanel, showGlossaryPanel, showLifePathDetail, showLifePathList, showMainScreen, showPauseScreen, showProgressionPanel, showTransportationOverviewPanel, toggleGamePanel, toggleInfoviewMenu, toggleLifePathPanel, toggleRadioPanel, toggleTransportationOverviewPanel };
   }
   export namespace infoview {
   	export { CargoSummary, ChartData, IndicatorValue, PassengerSummary, TransportSummaries, activeInfoview$, ageData$, arrestedCriminals$, attractiveness$, availableFertility$, availableFish$, availableForest$, availableOil$, availableOre$, averageAirPollution$, averageCrimeProbability$, averageFees$, averageFireHazard$, averageGroundPollution$, averageHealth$, averageHotelPrice$, averageIncome$, averageLandValue$, averageNoisePollution$, averageRent$, averageResourceCost$, averageUpkeep$, averageWaterPollution$, averageWealth$, batteryCharge$, bikeParking$, bikeParkingAvailability$, birthRate$, cemeteryAvailability$, cemeteryCapacity$, cemeteryUse$, clearActiveInfoview, closeInfoviewMenu, collectedMail$, collegeAvailability$, collegeCapacity$, collegeEligible$, collegeStudents$, commercialLevels$, commercialProfitability$, crimePerMonth$, crimeProbability$, crimeProducers$, criminals$, deathRate$, deathcareAvailability$, deliveredMail$, educationData$, electricityAvailability$, electricityConsumption$, electricityExport$, electricityImport$, electricityProduction$, electricityTrade$, electricityTransmission$, electricityTransmitted$, elementaryAvailability$, elementaryCapacity$, elementaryEligible$, elementaryStudents$, employed$, employeesData$, escapedRate$, fertilityExtractionRate$, fertilityRenewalRate$, fishExtractionRate$, fishRenewalRate$, forestExtractionRate$, forestRenewalRate$, garbageProcessingRate$, garbageProductionRate$, healthcareAvailability$, highSchoolAvailability$, highSchoolCapacity$, highSchoolEligible$, highSchoolStudents$, homeless$, homelessness$, inJail$, inPrison$, industrialLevels$, industrialProfitability$, infoviews$, jailAvailability$, jailCapacity$, jobs$, landfillAvailability$, landfillCapacity$, mailProductionRate$, movedAway$, movedIn$, officeLevels$, officeProfitability$, oilExtractionRate$, oreExtractionRate$, parkedCars$, parkingAvailability$, parkingCapacity$, parkingIncome$, patientCapacity$, patientCount$, population$, postServiceAvailability$, prisonAvailability$, prisonCapacity$, prisoners$, processingAvailability$, processingRate$, residentialLevels$, setActiveInfoview, setInfomodeActive, sewageAvailability$, sewageCapacity$, sewageConsumption$, sewageExport$, shelterAvailability$, shelterCapacity$, shelteredCount$, sickCount$, storedGarbage$, topExportColors$, topExportData$, topExportNames$, topImportColors$, topImportData$, topImportNames$, tourismRate$, trafficFlow$, transportSummaries$, unemployment$, universityAvailability$, universityCapacity$, universityEligible$, universityStudents$, useInfoviewToggle, waterAvailability$, waterCapacity$, waterConsumption$, waterExport$, waterImport$, waterTrade$, weatherEffect$, workers$, workplacesData$, worksplaces$ };

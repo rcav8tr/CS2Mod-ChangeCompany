@@ -485,6 +485,7 @@ declare module "cs2/input" {
   	"Notification Panel": Action;
   	"Chirper Panel": Action;
   	"Lifepath Panel": Action;
+  	"Universal Mod Panel": Action;
   	"Event Journal Panel": Action;
   	"Radio Panel": Action;
   	"Photo Mode Panel": Action;

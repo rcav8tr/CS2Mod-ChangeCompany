@@ -341,10 +341,10 @@ The following mods were used in the development of this mod:
     <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/change-company.1808488/" />
 
     <!-- Version of the mod.  Copied from assembly Version. -->
-    <ModVersion Value="4.0.2" />
+    <ModVersion Value="4.0.3" />
 
     <!-- Recommended version of the base game to use the mod. -->
-    <GameVersion Value="1.5.6*" />
+    <GameVersion Value="1.5.7*" />
 
     <!-- Dependency for the mod.  Can be set multiple times. -->
     <Dependency Id="" />
@@ -355,8 +355,8 @@ The following mods were used in the development of this mod:
 
     <!-- Change log.  Copied from ChangeLog.md file.  Supports minimal markdown subset. -->
     <ChangeLog>
-- Remove workplaces override when a company has no property (e.g. after bulldozing).
-- Fix compatibility issue with Public Transport Vehicles Texts Decals [WE Module] that caused an error on exit to desktop.
+- Update for game version 1.5.7.
+- Fix activation key operation after loading a game from the pause menu of an already loaded game.
 </ChangeLog>
 
     <!-- External links.  Can be set multiple times. -->

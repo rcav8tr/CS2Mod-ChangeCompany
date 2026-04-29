@@ -36,7 +36,7 @@ namespace ChangeCompany
     /// </summary>
     public partial class MyProcessingCompanySystem : GameSystemBase //, IDefaultSerializable, ISerializable, IPostDeserialize
     {
-        // This system is a copy of decompiled Game.Simulation.ProcessingCompanySystem as of 1.4.2 except generally:
+        // This system is a copy of decompiled Game.Simulation.ProcessingCompanySystem as of 1.5.7 except generally:
         //      System's logic is run on demand, not periodically in a system phase.
         //      Avoid creating and being subject to all other dependencies.
         //      Do all companies at once, ignoring update frame.

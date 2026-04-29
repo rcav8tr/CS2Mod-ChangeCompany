@@ -12,7 +12,7 @@ namespace ChangeCompany
     /// <summary>
     /// The settings for this mod.
     /// </summary>
-    [FileLocation(nameof(ChangeCompany))]
+    [FileLocation("ModsSettings/" + nameof(ChangeCompany) + "/" + nameof(ChangeCompany))]
 	[SettingsUITabOrder(TabProductionBalance, TabLockCompany, TabCompanyWorkplaces, TabAbout)]
     [SettingsUIKeyboardAction(ProductionBalanceActivationKeyActionName, modifierOptions: ModifierOptions.Allow)]
     public class ModSettings : ModSetting
