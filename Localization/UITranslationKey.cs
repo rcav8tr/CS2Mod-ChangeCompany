@@ -102,7 +102,8 @@ namespace ChangeCompany
         public const string SettingProductionBalanceResetLabel                              = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.ProductionBalanceReset]";
         public const string SettingProductionBalanceResetDesc                               = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.ProductionBalanceReset]";
         
-        public const string SettingTabLockCompany                                           = "Options.TAB" +           "[ChangeCompany.ChangeCompany.Mod.LockCompany]";
+        public const string SettingTabLock                                                  = "Options.TAB" +           "[ChangeCompany.ChangeCompany.Mod.Lock]";
+        public const string SettingLockGeneralDescription                                   = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.LockGeneralDescription]";
         public const string SettingLockAfterChangeLabel                                     = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.LockAfterChange]";
         public const string SettingLockAfterChangeDesc                                      = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.LockAfterChange]";
         public const string SettingLockAllCompaniesLabel                                    = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.LockAllCompanies]";
@@ -110,11 +111,44 @@ namespace ChangeCompany
         public const string SettingUnlockAllCompaniesLabel                                  = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.UnlockAllCompanies]";
         public const string SettingUnlockAllCompaniesDesc                                   = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.UnlockAllCompanies]";
 
-        public const string SettingTabCompanyWorkplaces                                     = "Options.TAB" +           "[ChangeCompany.ChangeCompany.Mod.CompanyWorkplaces]";
+        public const string SettingTabWorkplaces                                            = "Options.TAB" +           "[ChangeCompany.ChangeCompany.Mod.Workplaces]";
+        public const string SettingWorkplacesGeneralDescription                             = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.WorkplacesGeneralDescription]";
         public const string SettingKeepWorkplacesOverrideAfterChangeLabel                   = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.KeepWorkplacesOverrideAfterChange]";
         public const string SettingKeepWorkplacesOverrideAfterChangeDesc                    = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.KeepWorkplacesOverrideAfterChange]";
         public const string SettingCompanyWorkplacesRemoveAllOverridesLabel                 = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.CompanyWorkplacesRemoveAllOverrides]";
         public const string SettingCompanyWorkplacesRemoveAllOverridesDesc                  = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.CompanyWorkplacesRemoveAllOverrides]";
+
+        public const string SettingTabStorage                                               = "Options.TAB" +           "[ChangeCompany.ChangeCompany.Mod.Storage]";
+        public const string SettingStorageGeneralDescription                                = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.StorageGeneralDescription]";
+        public const string SettingStorageCommercialLabel                                   = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.StorageCommercial]";
+        public const string SettingStorageCommercialDesc                                    = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.StorageCommercial]";
+        public const string SettingStorageExtractorLabel                                    = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.StorageExtractor]";
+        public const string SettingStorageExtractorDesc                                     = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.StorageExtractor]";
+        public const string SettingStorageIndustrialLabel                                   = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.StorageIndustrial]";
+        public const string SettingStorageIndustrialDesc                                    = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.StorageIndustrial]";
+        public const string SettingStorageOfficeLabel                                       = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.StorageOffice]";
+        public const string SettingStorageOfficeDesc                                        = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.StorageOffice]";
+        public const string SettingStorageWarehouseLabel                                    = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.StorageWarehouse]";
+        public const string SettingStorageWarehouseDesc                                     = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.StorageWarehouse]";
+        public const string SettingStorageResetLabel                                        = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.StorageReset]";
+        public const string SettingStorageResetDesc                                         = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.StorageReset]";
+
+        public const string SettingTabVehicles                                              = "Options.TAB" +           "[ChangeCompany.ChangeCompany.Mod.Vehicles]";
+        public const string SettingVehiclesGeneralDescription                               = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesGeneralDescription]";
+        public const string SettingVehiclesUseATTOverridesLabel                             = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesUseATTOverrides]";
+        public const string SettingVehiclesUseATTOverridesDesc                              = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesUseATTOverrides]";
+        public const string SettingVehiclesCommercialLabel                                  = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesCommercial]";
+        public const string SettingVehiclesCommercialDesc                                   = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesCommercial]";
+        public const string SettingVehiclesExtractorLabel                                   = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesExtractor]";
+        public const string SettingVehiclesExtractorDesc                                    = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesExtractor]";
+        public const string SettingVehiclesIndustrialLabel                                  = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesIndustrial]";
+        public const string SettingVehiclesIndustrialDesc                                   = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesIndustrial]";
+        public const string SettingVehiclesOfficeLabel                                      = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesOffice]";
+        public const string SettingVehiclesOfficeDesc                                       = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesOffice]";
+        public const string SettingVehiclesWarehouseLabel                                   = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesWarehouse]";
+        public const string SettingVehiclesWarehouseDesc                                    = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesWarehouse]";
+        public const string SettingVehiclesResetLabel                                       = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesReset]";
+        public const string SettingVehiclesResetDesc                                        = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesReset]";
 
         public const string SettingTabAbout                                                 = "Options.TAB" +           "[ChangeCompany.ChangeCompany.Mod.About]";
         public const string SettingModVersionLabel                                          = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.ModVersion]";

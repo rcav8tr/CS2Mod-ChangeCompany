@@ -9,8 +9,8 @@
         <!--The file where mod information which is required for publishing mod on PDX mods are stored-->
         <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
         <Title>Change Company</Title>
-        <Version>4.0.3</Version>
-        <Description>Mod with 4 main features: Change Company, Production Balance, Lock Company, and Company Workplaces.</Description>
+        <Version>4.1.0</Version>
+        <Description>Mod with 6 main features: Change Company, Production Balance, Lock Company, Company Workplaces, Company Storage, and Company Vehicles.</Description>
         <Copyright>Copyright © 2025-2026</Copyright>
         <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
         <DefaultItemExcludes>UI\node_modules\**;$(DefaultItemExcludes)</DefaultItemExcludes>

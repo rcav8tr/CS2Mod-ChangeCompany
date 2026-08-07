@@ -1,9 +1,11 @@
 ﻿# Main Features
-The **Change Company** mod includes 4 main features:
+The **Change Company** mod includes 6 main features:
 - **Change Company**:  Allows you to change the company for a mixed residential, commercial, industrial, storage, or office building.
 - **Production Balance**:  Automatically balances production of industrial and office resources.
 - **Lock Company**:  Allows you to lock companies to prevent them from moving away.
 - **Company Workplaces**:  Allows you to override the number of workplaces for a company.
+- **Company Storage**:  Allows you to override company storage capacity by company type.
+- **Company Vehicles**:  Allows you to override the maximum number of vehicles by company type.
 
 These features are described in the following sections.
 
@@ -16,34 +18,28 @@ Some possible reasons to change a company:
   Then use **Change Company** to change the company (i.e. resource) stored at the storage building.
   This may improve traffic flow by reducing truck travel distance to obtain or deliver resources.
 
-The **Change Company** feature is intended to be used together with my **Resource Locator** mod
-which locates buildings where resources are required, produced, sold, and stored.
+See my **Resource Locator** mod which locates buildings where resources are required, produced, sold, and stored.
 
 To change a company:
 - Select a mixed residential, commercial, industrial, storage, or office building to display its information.
 - If the company can be changed (see **Restrictions** below), the **Change Company** section will be displayed.
 - Choose the new company in the dropdown based on the resource you want the new company to sell, produce, or store.
-  The company dropdown defaults to the current company, if any.
 - To change to a random company, choose **Random** in the dropdown.
   **Random** is available only if there is more than one company to choose from.
 - To remove the current company, choose **Remove** in the dropdown.
   **Remove** is available only if there is a current company.
 - To change the company on the current building, click **Change This**.
 - To change all existing companies that are like the current company, click **Change All**.
-  If **Random** is chosen in the dropdown, each company that is changed is assigned its own random company
-  (i.e. they do not all get the same random company).
 - The change is immediate, even if the simulation is paused.
 
 Upon changing a company to a new company:
 - All employees of any old company are layed off.
-  The new company will hire its own employees, which may or may not be the same employees that were layed off.
+  The new company will hire its own employees.
 - If the old company was individually locked (see **Lock Company** below), the new company will be individually locked.
 - If the old company had a workplaces override and the **Keep Workplaces Override After Change** option is set (see **Options** below), the override will remain.
-  If the option is not set, the override will be lost.
 - If the building has no custom name, the building will be named according to the brand of the new company.
   If the building has a custom name, the custom name will be retained after the company is changed.
   To restore a building name to its default (i.e. company brand and address), change the building name to blank.
-- The new company operates the same as if the game assigned the company to the building.
 
 Upon removing a company:
 - All employees of the old company are layed off.
@@ -63,8 +59,7 @@ The **Change Company** feature has the following restrictions:
   The company on an ore storage building cannot be changed to store any resource other than Ore, Coal, or Stone.
 - An industrial building cannot be changed between production and storage by changing the company.
 
-To work around some of the restrictions above, use a mod like **Plop the Growables** to place a building
-that allows the desired resource to be sold, produced, or stored or that is the correct production vs storage building.
+To work around some of the restrictions above, use a mod like **Plop the Growables** to place a building of the desired type.
 Then use **Change Company** to change the company in that building.
 
 
@@ -84,13 +79,10 @@ once for industrial resources and once for office resources:
 - Automatically change the chosen company to a company that produces the highest deficit.
   This company change is the same as described above for **Change Company**.
 
-Achieveing balance may take several game minutes to a few game months depending on factors like:
+Achieving balance may take several game minutes to a few game months depending on factors like:
 - **Check Interval**.  A higher interval takes longer.
 - Number of companies.  More companies takes longer.
 - How far the resources are currently out of balance.  More out of balance takes longer.
-Industrial will usually take longer to balance than office.
- 
-During and after **Production Balance**, you may need to adjust the amount of extraction, commercial, storage, and other items in your city.
 
 If the option is set to **Lock After Change** (see **Options** below),
 the company will be individually locked for a change due to **Production Balance**.
@@ -105,29 +97,17 @@ The **Production Balance** feature has the following restrictions and rules:
 - The standard deviation of the resource surpluses is computed as a percent of the average company production.
   Production balance is performed only if the standard deviation is a minimum of 80%.
   This value can be adjusted in **Options** and viewed in **Statistics** (see below).
-- Production balance changes a company only if the company' production is a maximum of 50% of the city's production of the surplus resource.
+- Production balance changes a company only if the company's production is a maximum of 50% of the city's production of the surplus resource.
   This value can be adjusted in **Options** (see below).
 
 Some of these restrictions and rules are to prevent excessive company changes when the production gets close to balanced and in small cities.
 
 ### Production Balance - Statistics
 The current statistics computed by production balance are displayed on the **Production Balance Statistics** screen.
-The screen can be displayed by clicking on the activaton button in the upper left
-or by pressing the keyboard shortcut which by default is Shift+Ctrl+B (see **Options** below).
-The screen can be dragged and the new position will be remembered between games.
+The screen can be displayed by clicking on the activaton button in the upper left or by pressing the keyboard shortcut (see **Options** below).
 You can use the statistics to help when deciding if or how to adjust the production balance options.
 
-The following statistics are displayed for industrial and for office:
-- Companies: number of companies.
-- Minimum Companies: minimum number of companies to do production balance (from **Options**).
-- Standard Deviation: standard deviation of resource surpluses as a percent of average production.
-- Minimum Standard Deviation: minimum standard deviation percent to do production balance (from **Options**).
-- Last Change Date Time: date and time of last company change.
-- Old Resource: the last company to change produced this resource.
-- New Resource: the last company to change now produces this resource.
-- Next Check Date Time: date and time of the next production balance check.
-
-Companies and Standard Deviation require the simulation to run a bit for the values to be calculated and displayed.
+Companies and Standard Deviation statistics require the simulation to run a bit for the values to be calculated and displayed.
 The last change statistics are only since the game was loaded and are displayed only after a production balance is successfully performed.
 
 
@@ -152,7 +132,6 @@ To lock or unlock all companies in the city, see **Options** below.
 The **Lock Company** feature has the following restrictions:
 - The company cannot be locked on a building that is:  service (has no company), extractor (never moves away), storage (never moves away),
   under construction, abandoned, condemned, deleted, destroyed, or outside connection.
-- The company cannot be locked on a building that does not already have a company (i.e. cannot not lock something that does not exist).
 - The company cannot be locked if the **Lock All Companies** option is set (see **Options** below).
 
 
@@ -174,9 +153,28 @@ The **Company Workplaces** feature has the following restrictions:
 - Only companies with workplaces can be overridden (of course).
   Note that industrial warehouses do not have workplaces.
 - The new override value must be from 5 to 9999.
-  5 is the minimum that the normal game logic allows.
 - Game logic normally adjusts workplaces up or down over time based on factors like: available storage, lot size, and building level.
   A company workplaces override prevents this normal game logic.
+
+
+# Company Storage - Description
+The **Company Storage** feature allows you to override the storage capacity for
+commercial, extractor, industrial, office, and warehouse companies.
+Companies in signature buildings are included.
+The overrides are set in **Options**.
+
+If you reduce the storage capacity to less than the amount currently stored at a company,
+then this mod will proportionally reduce the company's stored resources so they fit in the new storage capacity.
+
+
+# Company Vehicles - Description
+The **Company Vehicles** feature allows you to override the maximum number of vehicles for
+commercial, extractor, industrial, office, and warehouse companies.
+Companies in signature buildings are included.
+The overrides are set in **Options**.
+
+If you reduce the maximum number of vehicles to less than the number of vehicles a company currently has active,
+then the excess vehicles will eventually return to the company as the simulation runs.
 
 
 # Options
@@ -230,7 +228,7 @@ Reset production balance options to default values.
 Reset also hides the **Production Balance Statistics** screen and resets its position.
 
 
-## Lock Company
+## Lock
 The options for **Lock Company** are described below.
 
 ### Lock After Change
@@ -259,7 +257,7 @@ Remove the lock on all individual companies in the city.
 This option is available only while in a game.
 
 
-## Company Workplaces
+## Workplaces
 The options for **Company Workplaces** are described below.
 
 ### Keep Workplaces Override After Change
@@ -274,6 +272,37 @@ Remove workplaces override from all companies in the city.
 This option is available only while in a game.
 
 
+## Storage
+The options for **Company Storage** allow you to override company storage capacity by company type.
+All companies of a type will have the same storage capacity.
+Storage capacity cannot be set for individual companies.
+
+For offices that produce Financials and Media, the vanilla game default is 500.
+This mod sets the capacity the same for all offices, which is a minimum of 20000.
+
+For warehouses, the actual storage capacity per game logic is the value you choose multiplied by the building level and lot size.
+
+Click the **Reset** button to reset all values to their vanilla game defaults.
+
+
+## Vehicles
+The options for **Company Vehicles** allow you to override the maximum number of vehicles by company type.
+All companies of a type will have the same maximum number of vehicles.
+Maximum number of vehicles cannot be set for individual companies.
+
+Click the **Reset** button to reset all values to their vanilla game defaults.
+
+### Use Overrides From All Transit+Trucks Mod
+This option is available only when the **All Transit+Trucks** (AT+T) mod is active.
+
+When this option is clear (default):
+- Overrides from this mod are enabled and define the maximum number of vehicles for all company types.
+
+When this option is set:
+- Overrides from the AT+T mod define the maximum number of vehicles for the company types supported by that mod.
+- All vehicle overrides in this mod are disabled.
+
+
 # Compatibility
 This mod is translated into all languages supported by the base game.
 
@@ -282,6 +311,9 @@ Compatibility with other mods:
 - This mod is compatible with **Realistic Workplaces and Households** (RWH) mod.
   A workplaces override from this mod will override the company workplaces calculation from the RWH mod, as intended.
   If an override from this mod is removed or this mod is disabled or unsubscribed, the RWH calculation will be restored when the simulation runs.
+- This mod is compatible with **All Transit+Trucks** (AT+T) mod.
+  The **Use Overrides From All Transit+Trucks Mod** option allows you to choose vehicle overrides from this mod or from the AT+T mod.
+  If this mod is disabled or unsubscribed, the AT+T vehicle overrides will again take effect if that mod is active.
 - There are no known compatibility issues with any other mods.
 
 This mod can be safely disabled or unsubscribed at any time.  If this mod is disabled or unsubscribed:
@@ -291,6 +323,9 @@ This mod can be safely disabled or unsubscribed at any time.  If this mod is dis
   Normal game logic will adjust the workplaces up or down over time from the last override value
   (i.e. workplaces will NOT be initialized to a default value).
   To initialize overridden companies to a default value, use the **Remove All Overrides** option before disabling or unsubscribing this mod.
+- Company storage capacities will revert to their vanilla game defaults.
+  To reduce the amount stored to less than vanilla game defaults, **Reset** company storage before disabling or unsubscribing this mod.
+- Company vehicles will revert to their vanilla game defaults.
 
 To receive an invitation to the Discord server for mod discussion, go to:  [https://discord.gg/HTav7ARPs2](https://discord.gg/HTav7ARPs2)
 

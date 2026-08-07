@@ -1,4 +1,6 @@
-﻿using Game.UI.InGame;
+﻿using Game.Economy;
+using Game.Prefabs;
+using Game.UI.InGame;
 using Unity.Entities;
 
 namespace ChangeCompany
@@ -23,6 +25,62 @@ namespace ChangeCompany
             // Property does not have a company.
             companyEntity = Entity.Null;
             return false;
+        }
+
+        /// <summary>
+        /// Get the company type for storage and vehicles overrides.
+        /// </summary>
+        public static CompanyType GetCompanyType(
+            Entity companyPrefab,
+            in ComponentLookup<CommercialCompanyData> componentLookupCommercialCompanyData,
+            in ComponentLookup<ExtractorCompanyData > componentLookupExtractorCompanyData,
+            in ComponentLookup<IndustrialCompanyData> componentLookupIndustrialCompanyData,
+            in ComponentLookup<StorageCompanyData   > componentLookupStorageCompanyData,
+            in ComponentLookup<IndustrialProcessData> componentLookupIndustrialProcessData
+            )
+        {
+            // Company type is mostly based on the component(s) present on the prefab.
+
+            // Check for commercial.
+            if (componentLookupCommercialCompanyData.HasComponent(companyPrefab))
+            {
+                return CompanyType.Commercial;
+            }
+            
+            // Check for industrial, which includes extractor, industrial, office, and warehouse.
+            if (componentLookupIndustrialCompanyData.HasComponent(companyPrefab))
+            {
+                // For industrial, company type is based on an additional component present on the prefab.
+
+                // Check for extractor.
+                if (componentLookupExtractorCompanyData.HasComponent(companyPrefab))
+                {
+                    return CompanyType.Extractor;
+                }
+                
+                // Check for warehouse.
+                if (componentLookupStorageCompanyData.HasComponent(companyPrefab))
+                {
+                    return CompanyType.Warehouse;
+                }
+                
+                // There are no components whose presence can distinguish between industrial and office company prefabs.
+                // Use output resource instead.
+                if (componentLookupIndustrialProcessData.TryGetComponent(companyPrefab, out IndustrialProcessData industrialProcessData))
+                {
+                    if (EconomyUtils.IsOfficeResource(industrialProcessData.m_Output.m_Resource))
+                    {
+                        return CompanyType.Office;
+                    }
+                    else
+                    {
+                        return CompanyType.Industrial;
+                    }
+                }
+            }
+
+            // No company type.
+            return CompanyType.None;
         }
     }
 }

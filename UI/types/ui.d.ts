@@ -323,6 +323,7 @@ declare module "cs2/ui" {
   	"Economy Panel": Action;
   	"City Information Panel": Action;
   	"Statistic Panel": Action;
+  	"Toggle Global Contour Lines": Action;
   	"Transportation Overview Panel": Action;
   	"Notification Panel": Action;
   	"Chirper Panel": Action;

@@ -163,10 +163,15 @@ namespace ChangeCompany
                 defaultWorld.GetOrCreateSystemManaged<IndustrialWorkplacesSystem>();
                 defaultWorld.GetOrCreateSystemManaged<RWHCompanyWorkplacesSystem>();
 
-                // Create this mod's system to remove the workplaces override for companies with no PropertyRenter.
+                // Create and activate this mod's system to remove the workplaces override for companies with no PropertyRenter.
                 // Do in PreSimulation so the overrides are removed before any
                 // game systems in Simulation phase can assign the company to a property.
                 updateSystem.UpdateAt<RemoveWorkplacesOverrideSystem>(SystemUpdatePhase.PreSimulation);
+
+                // Create and activate this mod's systems to override company storage and vehicles.
+                // Run these at the end of the phase so that they overwrite any changes made by other mods in the same phase.
+                updateSystem.UpdateAfter<OverrideStorageSystem >(SystemUpdatePhase.PrefabUpdate);
+                updateSystem.UpdateAfter<OverrideVehiclesSystem>(SystemUpdatePhase.PrefabUpdate);
 
 #if DEBUG
                 // Get localized text from the game where the value is or contains specific text.
@@ -177,7 +182,8 @@ namespace ChangeCompany
                 //    if (!keyValue.Key.StartsWith("Assets."))
                 //    {
                 //        //if (keyValue.Value.ToLower().Contains("no data"))
-                //        if (keyValue.Value.ToLower() == "default")
+                //        if (keyValue.Value.ToLower() == "vehicles")
+                //        //if (keyValue.Key.ToLower().Contains("value_ton"))
                 //        {
                 //            log.Info(keyValue.Key + "\t" + keyValue.Value);
                 //        }
@@ -191,7 +197,7 @@ namespace ChangeCompany
                 //    localizationManager.SetActiveLocale(localeID);
                 //    foreach (KeyValuePair<string, string> keyValue in localizationManager.activeDictionary.entries)
                 //    {
-                //        if (keyValue.Key == "EconomyPanel.LOAN_FORM_RESET" || keyValue.Key == "Options.OPTION[ModdingSettings.updateModdingToolchain]")
+                //        if (keyValue.Key == "Common.VALUE_TON")
                 //        {
                 //            log.Info(keyValue.Key + "\t" + localeID + "\t" + keyValue.Value);
                 //            //break;

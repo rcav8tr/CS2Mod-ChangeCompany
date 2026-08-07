@@ -1,2 +1,2 @@
-﻿- Update for game version 1.5.7.
-- Fix activation key operation after loading a game from the pause menu of an already loaded game.
+﻿- Add ability to change storage capacity by company type.
+- Add ability to change maximum number of vehicles by company type.
