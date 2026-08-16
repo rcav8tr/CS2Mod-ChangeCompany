@@ -274,6 +274,7 @@ This option is available only while in a game.
 
 ## Storage
 The options for **Company Storage** allow you to override company storage capacity by company type.
+You can enable or disable the overrides (default is enabled).
 All companies of a type will have the same storage capacity.
 Storage capacity cannot be set for individual companies.
 
@@ -282,25 +283,16 @@ This mod sets the capacity the same for all offices, which is a minimum of 20000
 
 For warehouses, the actual storage capacity per game logic is the value you choose multiplied by the building level and lot size.
 
-Click the **Reset** button to reset all values to their vanilla game defaults.
+Click the **Reset** button to reset all settings to their defaults.
 
 
 ## Vehicles
 The options for **Company Vehicles** allow you to override the maximum number of vehicles by company type.
+You can enable or disable the overrides (default is enabled).
 All companies of a type will have the same maximum number of vehicles.
 Maximum number of vehicles cannot be set for individual companies.
 
-Click the **Reset** button to reset all values to their vanilla game defaults.
-
-### Use Overrides From All Transit+Trucks Mod
-This option is available only when the **All Transit+Trucks** (AT+T) mod is active.
-
-When this option is clear (default):
-- Overrides from this mod are enabled and define the maximum number of vehicles for all company types.
-
-When this option is set:
-- Overrides from the AT+T mod define the maximum number of vehicles for the company types supported by that mod.
-- All vehicle overrides in this mod are disabled.
+Click the **Reset** button to reset all settings to their defaults.
 
 
 # Compatibility
@@ -311,9 +303,8 @@ Compatibility with other mods:
 - This mod is compatible with **Realistic Workplaces and Households** (RWH) mod.
   A workplaces override from this mod will override the company workplaces calculation from the RWH mod, as intended.
   If an override from this mod is removed or this mod is disabled or unsubscribed, the RWH calculation will be restored when the simulation runs.
-- This mod is compatible with **All Transit+Trucks** (AT+T) mod.
-  The **Use Overrides From All Transit+Trucks Mod** option allows you to choose vehicle overrides from this mod or from the AT+T mod.
-  If this mod is disabled or unsubscribed, the AT+T vehicle overrides will again take effect if that mod is active.
+- This mod is compatible with **All Transit+Trucks** mod.
+  Use the enable/disable options in each mod to choose the one mod that will control the maximum number of vehicles for companies.
 - There are no known compatibility issues with any other mods.
 
 This mod can be safely disabled or unsubscribed at any time.  If this mod is disabled or unsubscribed:

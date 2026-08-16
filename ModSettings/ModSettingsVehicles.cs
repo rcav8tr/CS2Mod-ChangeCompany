@@ -37,7 +37,7 @@ namespace ChangeCompany
         /// </summary>
         private void SetDefaultsVehicles()
         {
-            VehiclesUseATTOverrides = false;
+            VehiclesOverridesEnabled = true;
             VehiclesCommercial = DefaultVehiclesCommercial;
             VehiclesExtractor  = DefaultVehiclesExtractor;
             VehiclesIndustrial = DefaultVehiclesIndustrial;
@@ -50,50 +50,50 @@ namespace ChangeCompany
         [SettingsUIMultilineText]
         public string VehiclesGeneralDescription => Translation.Get(UITranslationKey.SettingVehiclesGeneralDescription);
 
-        // Whether or not to use overrides from All Transit+Trucks mod if active.
-        private bool _vehiclesUseATTOverrides;
-        [SettingsUISection(TabVehicles, "")]
-        [SettingsUIHideByCondition(typeof(ModSettings), nameof(AllTransitTrucksModActive), invert: true)]
+        // Whether or not to use overrides from All Transit+Trucks (AT+T) mod if active.
+        // This setting is now obsolete and hidden because VehiclesOverridesEnabled replaces it.
+        [SettingsUIHidden]
         public bool VehiclesUseATTOverrides
         {
-            get { return _vehiclesUseATTOverrides; }
+            get { return false; }
             set
             {
-                _vehiclesUseATTOverrides = value;
-
-                // Check for value set or cleared.
+                // If the user previously used AT+T overrides, then disable overrides here.
                 if (value)
                 {
-                    RestoreVehicleDefaultsIfLoaded();
-                }
-                else
-                {
-                    OverrideVehiclesIfLoaded();
+                    VehiclesOverridesEnabled = false;
                 }
             }
         }
 
-        /// <summary>
-        /// Whether or not the All Transit+Trucks mod is active.
-        /// </summary>
-        private bool AllTransitTrucksModActive()
+        // Whether or not to enable vehicle overrides in this mod.
+        // This setting replaces obsolete setting VehiclesUseATTOverrides.
+        private bool _vehiclesOverridesEnabled;
+        [SettingsUISection(TabVehicles, "")]
+        public bool VehiclesOverridesEnabled
         {
-            return _overrideVehiclesSystem.AllTransitTrucksModActive;
-        }
+            get { return _vehiclesOverridesEnabled; }
+            set
+            {
+                _vehiclesOverridesEnabled = value;
 
-        /// <summary>
-        /// Whether or not All Transit+Trucks mod is active and being used to override vehicles.
-        /// </summary>
-        private bool AllTransitTrucksModActiveAndUsed()
-        {
-            return AllTransitTrucksModActive() && VehiclesUseATTOverrides;
+                // Override vehicles or restore vehicle defaults.
+                if (value)
+                {
+                    OverrideVehiclesIfLoaded();
+                }
+                else
+                {
+                    RestoreVehicleDefaultsIfLoaded();
+                }
+            }
         }
 
         // Vehicles for commercial.
         private int _vehiclesCommercial;
         [SettingsUISection(TabVehicles, "")]
         [SettingsUISlider(min = MinVehiclesCommercial, max = MaxVehiclesCommercial, step = 1f, scalarMultiplier = 1f, unit = Unit.kInteger)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(AllTransitTrucksModActiveAndUsed))]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(VehiclesOverridesEnabled), true)]
         public int VehiclesCommercial
         {
             get { return _vehiclesCommercial; }
@@ -104,7 +104,7 @@ namespace ChangeCompany
         private int _vehiclesExtractor;
         [SettingsUISection(TabVehicles, "")]
         [SettingsUISlider(min = MinVehiclesExtractor, max = MaxVehiclesExtractor, step = 1f, scalarMultiplier = 1f, unit = Unit.kInteger)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(AllTransitTrucksModActiveAndUsed))]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(VehiclesOverridesEnabled), true)]
         public int VehiclesExtractor
         {
             get { return _vehiclesExtractor; }
@@ -115,7 +115,7 @@ namespace ChangeCompany
         private int _vehiclesIndustrial;
         [SettingsUISection(TabVehicles, "")]
         [SettingsUISlider(min = MinVehiclesIndustrial, max = MaxVehiclesIndustrial, step = 1f, scalarMultiplier = 1f, unit = Unit.kInteger)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(AllTransitTrucksModActiveAndUsed))]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(VehiclesOverridesEnabled), true)]
         public int VehiclesIndustrial
         {
             get { return _vehiclesIndustrial; }
@@ -126,7 +126,7 @@ namespace ChangeCompany
         private int _vehiclesOffice;
         [SettingsUISection(TabVehicles, "")]
         [SettingsUISlider(min = MinVehiclesOffice, max = MaxVehiclesOffice, step = 1f, scalarMultiplier = 1f, unit = Unit.kInteger)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(AllTransitTrucksModActiveAndUsed))]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(VehiclesOverridesEnabled), true)]
         public int VehiclesOffice
         {
             get { return _vehiclesOffice; }
@@ -137,7 +137,7 @@ namespace ChangeCompany
         private int _vehiclesWarehouse;
         [SettingsUISection(TabVehicles, "")]
         [SettingsUISlider(min = MinVehiclesWarehouse, max = MaxVehiclesWarehouse, step = 1f, scalarMultiplier = 1f, unit = Unit.kInteger)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(AllTransitTrucksModActiveAndUsed))]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(VehiclesOverridesEnabled), true)]
         public int VehiclesWarehouse
         {
             get { return _vehiclesWarehouse; }

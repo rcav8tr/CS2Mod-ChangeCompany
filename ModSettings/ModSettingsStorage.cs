@@ -14,11 +14,11 @@ namespace ChangeCompany
         // except offices that produce Financials and Media have 500 instead of 20000.
         // This difference is ignored such that Financials and Media get the same default as other offices.
         // If the game changes any default, these need to be updated.
-        private const int DefaultStorageCommercial =   8000;
-        private const int DefaultStorageExtractor  = 100000;
-        private const int DefaultStorageIndustrial = 100000;
-        private const int DefaultStorageOffice     =  20000;
-        private const int DefaultStorageWarehouse  =  20000;
+        public const int DefaultStorageCommercial =   8000;
+        public const int DefaultStorageExtractor  = 100000;
+        public const int DefaultStorageIndustrial = 100000;
+        public const int DefaultStorageOffice     =  20000;
+        public const int DefaultStorageWarehouse  =  20000;
 
         // Define minimum storage as the default.
         private const float MinStorageCommercial = DefaultStorageCommercial;
@@ -46,6 +46,7 @@ namespace ChangeCompany
         /// </summary>
         private void SetDefaultsStorage()
         {
+            StorageOverridesEnabled = true;
             StorageCommercial = DefaultStorageCommercial;
             StorageExtractor  = DefaultStorageExtractor ;
             StorageIndustrial = DefaultStorageIndustrial;
@@ -58,10 +59,33 @@ namespace ChangeCompany
         [SettingsUIMultilineText]
         public string StorageGeneralDescription => Translation.Get(UITranslationKey.SettingStorageGeneralDescription);
 
+        // Whether or not to enable storage overrides in this mod.
+        private bool _storageOverridesEnabled;
+        [SettingsUISection(TabStorage, "")]
+        public bool StorageOverridesEnabled
+        {
+            get { return _storageOverridesEnabled; }
+            set
+            {
+                _storageOverridesEnabled = value;
+
+                // Override storage or restore storage defaults.
+                if (value)
+                {
+                    OverrideStorageIfLoaded();
+                }
+                else
+                {
+                    RestoreStorageDefaultsIfLoaded();
+                }
+            }
+        }
+
         // Storage for commercial.
         private int _storageCommercial;
         [SettingsUISection(TabStorage, "")]
         [SettingsUISlider(min = MinStorageCommercial, max = MaxStorageCommercial, step = StepStorageCommercial, scalarMultiplier = 1f, unit = Unit.kWeight)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(StorageOverridesEnabled), true)]
         public int StorageCommercial
         {
             get { return _storageCommercial; }
@@ -72,6 +96,7 @@ namespace ChangeCompany
         private int _storageExtractor;
         [SettingsUISection(TabStorage, "")]
         [SettingsUISlider(min = MinStorageExtractor, max = MaxStorageExtractor, step = StepStorageExtractor, scalarMultiplier = 1f, unit = Unit.kWeight)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(StorageOverridesEnabled), true)]
         public int StorageExtractor
         {
             get { return _storageExtractor; }
@@ -82,6 +107,7 @@ namespace ChangeCompany
         private int _storageIndustrial;
         [SettingsUISection(TabStorage, "")]
         [SettingsUISlider(min = MinStorageIndustrial, max = MaxStorageIndustrial, step = StepStorageIndustrial, scalarMultiplier = 1f, unit = Unit.kWeight)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(StorageOverridesEnabled), true)]
         public int StorageIndustrial
         {
             get { return _storageIndustrial; }
@@ -92,6 +118,7 @@ namespace ChangeCompany
         private int _storageOffice;
         [SettingsUISection(TabStorage, "")]
         [SettingsUISlider(min = MinStorageOffice, max = MaxStorageOffice, step = StepStorageOffice, scalarMultiplier = 1f, unit = Unit.kWeight)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(StorageOverridesEnabled), true)]
         public int StorageOffice
         {
             get { return _storageOffice; }
@@ -102,6 +129,7 @@ namespace ChangeCompany
         private int _storageWarehouse;
         [SettingsUISection(TabStorage, "")]
         [SettingsUISlider(min = MinStorageWarehouse, max = MaxStorageWarehouse, step = StepStorageWarehouse, scalarMultiplier = 1f, unit = Unit.kWeight)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(StorageOverridesEnabled), true)]
         public int StorageWarehouse
         {
             get { return _storageWarehouse; }
@@ -126,6 +154,19 @@ namespace ChangeCompany
             if (_loaded)
             {
                 _overrideStorageSystem.OverrideStorage();
+            }
+        }
+
+        /// <summary>
+        /// Restore storage defaults if settings are loaded.
+        /// </summary>
+        private void RestoreStorageDefaultsIfLoaded()
+        {
+            // Settings must be loaded.
+            // This prevents restoring storage while initial defaults are being set and while settings are loading.
+            if (_loaded)
+            {
+                _overrideStorageSystem.RestoreDefaults();
             }
         }
     }

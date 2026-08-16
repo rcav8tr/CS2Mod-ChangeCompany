@@ -25,6 +25,9 @@ namespace ChangeCompany
         // Resource prefabs.
         ResourcePrefabs _resourcePrefabs;
 
+        // Whether or not to restore defaults.
+        private bool _restoreDefaults;
+
         /// <summary>
         /// Initialize this system.
         /// </summary>
@@ -38,6 +41,7 @@ namespace ChangeCompany
 			_resourcePrefabs = World.GetOrCreateSystemManaged<ResourceSystem>().GetPrefabs();
 
             // Initialize.
+            _restoreDefaults = false;
             Enabled = false;
         }
 
@@ -60,6 +64,7 @@ namespace ChangeCompany
 #endif
 
             // Initialize overrides.
+            _restoreDefaults = false;
             OverrideStorage();
         }
 
@@ -144,6 +149,13 @@ namespace ChangeCompany
                 return;
             }
 
+            // Continue if storage overrides are enabled or if restoring defaults.
+            if (!(Mod.ModSettings.StorageOverridesEnabled || _restoreDefaults))
+            {
+                Enabled = false;
+                return;
+            }
+
             // Define query to get commercial and industrial company prefabs that have StorageLimitData.
             // There are other prefabs with StorageLimitData, but only companies are needed.
             // StorageLimitData holds the storage limit for the company.
@@ -179,16 +191,34 @@ namespace ChangeCompany
                 // Company type must be valid.
                 if (companyType != CompanyType.None)
                 {
-                    // Get new storage limit from the setting corresponding to the company type.
-                    int newStorageLimit = companyType switch
+                    // Get new storage limit depending on whether or not restoring defaults.
+                    int newStorageLimit;
+                    if (_restoreDefaults)
                     {
-                        CompanyType.Commercial => Mod.ModSettings.StorageCommercial,
-                        CompanyType.Extractor  => Mod.ModSettings.StorageExtractor,
-                        CompanyType.Industrial => Mod.ModSettings.StorageIndustrial,
-                        CompanyType.Office     => Mod.ModSettings.StorageOffice,
-                        CompanyType.Warehouse  => Mod.ModSettings.StorageWarehouse,
-                        _                      => 10000,
-                    };
+                        // Get default storage limit corresponding to the company type.
+                        newStorageLimit = companyType switch
+                        {
+                            CompanyType.Commercial => ModSettings.DefaultStorageCommercial,
+                            CompanyType.Extractor  => ModSettings.DefaultStorageExtractor,
+                            CompanyType.Industrial => ModSettings.DefaultStorageIndustrial,
+                            CompanyType.Office     => ModSettings.DefaultStorageOffice,
+                            CompanyType.Warehouse  => ModSettings.DefaultStorageWarehouse,
+                            _                      => 10000,
+                        };
+                    }
+                    else
+                    {
+                        // Get new storage limit from the setting corresponding to the company type.
+                        newStorageLimit = companyType switch
+                        {
+                            CompanyType.Commercial => Mod.ModSettings.StorageCommercial,
+                            CompanyType.Extractor  => Mod.ModSettings.StorageExtractor,
+                            CompanyType.Industrial => Mod.ModSettings.StorageIndustrial,
+                            CompanyType.Office     => Mod.ModSettings.StorageOffice,
+                            CompanyType.Warehouse  => Mod.ModSettings.StorageWarehouse,
+                            _                      => 10000,
+                        };
+                    }
 
                     // Update the storage limit data.
                     // This will be executed only while Options are displayed, and hence simulation is not running.
@@ -205,7 +235,8 @@ namespace ChangeCompany
             // This depends on the storage limit data being updated immediately above.
             UpdateCompanies();
 
-            // Done overriding.
+            // Done.
+            _restoreDefaults = false;
             Enabled = false;
         }
 
@@ -355,6 +386,15 @@ namespace ChangeCompany
         /// </summary>
         public void OverrideStorage()
         {
+            Enabled = true;
+        }
+
+        /// <summary>
+        /// Set flag to restore defaults for all company types during next OnUpdate.
+        /// </summary>
+        public void RestoreDefaults()
+        {
+            _restoreDefaults = true;
             Enabled = true;
         }
     }

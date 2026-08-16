@@ -46,9 +46,10 @@ namespace ChangeCompany
         //      Spaces around the comma separators will be included in the translated text.
         //      To include a comma in the translated text, the translated text must be enclosed in double quotes ("te, xt").
         //      To include a double quote in the translated text, use two consecutive double quotes inside the double quoted translated text ("te""xt").
+        //      A translation key that starts with "@@" is a temporary translation key that can be referenced in other translated text with "@@".
+        //      A temporary translation key cannot start with the same text as a regular translation key or another temporary translation key.
         //      Translated text that contains "@@" will use the translated text from the translation key after the "@@".
         //      The translation key referenced with "@@" must have been read prior to the line with the "@@".
-        //      A translation key that starts with "@@" is a temporary translation key that can be referenced in other translated text with "@@".
         //      Translated text cannot be blank for the default locale.
         //      Blank translated text in a non-default locale will use the translated text for the default locale.
         //      Translated text that starts with "$$" will retrieve the game's translated text for whatever key follows the "$$".
@@ -227,6 +228,29 @@ namespace ChangeCompany
                     {
                         Mod.log.Warn($"Translation key [{translationkey}] is not defined in the translation file.");
                         translationsRegularActiveLocale[translationkey] = translationkey;
+                    }
+                }
+
+                // Validate temporary translation keys.
+                // Use default locale for validations.
+                foreach (string temporaryTranslationKey in translationsTemporaryDefaultLocale.Keys)
+                {
+                    // Validate against regular translation keys.
+                    foreach (string regularTranslationKey in translationsRegularDefaultLocale.Keys)
+                    {
+                        if (temporaryTranslationKey.StartsWith("@@" + regularTranslationKey))
+                        {
+                            Mod.log.Warn($"Temporary translation key [{temporaryTranslationKey}] is invalid in translation file because it starts with same as regular translation key [{regularTranslationKey}].");
+                        }
+                    }
+
+                    // Validate against other temporary translation keys.
+                    foreach (string otherTemporaryTranslationKey in translationsTemporaryDefaultLocale.Keys)
+                    {
+                        if (temporaryTranslationKey != otherTemporaryTranslationKey && temporaryTranslationKey.StartsWith(otherTemporaryTranslationKey))
+                        {
+                            Mod.log.Warn($"Temporary translation key [{temporaryTranslationKey}] is invalid in translation file because it starts with same as other temporary translation key [{otherTemporaryTranslationKey}].");
+                        }
                     }
                 }
 

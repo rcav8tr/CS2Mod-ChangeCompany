@@ -1,2 +1,1 @@
-﻿- Add ability to change storage capacity by company type.
-- Add ability to change maximum number of vehicles by company type.
+﻿- Add ability to disable overrides for company storage and vehicles.

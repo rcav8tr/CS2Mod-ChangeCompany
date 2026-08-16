@@ -120,6 +120,8 @@ namespace ChangeCompany
 
         public const string SettingTabStorage                                               = "Options.TAB" +           "[ChangeCompany.ChangeCompany.Mod.Storage]";
         public const string SettingStorageGeneralDescription                                = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.StorageGeneralDescription]";
+        public const string SettingStorageOverridesEnabledLabel                             = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.StorageOverridesEnabled]";
+        public const string SettingStorageOverridesEnabledDesc                              = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.StorageOverridesEnabled]";
         public const string SettingStorageCommercialLabel                                   = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.StorageCommercial]";
         public const string SettingStorageCommercialDesc                                    = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.StorageCommercial]";
         public const string SettingStorageExtractorLabel                                    = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.StorageExtractor]";
@@ -135,8 +137,8 @@ namespace ChangeCompany
 
         public const string SettingTabVehicles                                              = "Options.TAB" +           "[ChangeCompany.ChangeCompany.Mod.Vehicles]";
         public const string SettingVehiclesGeneralDescription                               = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesGeneralDescription]";
-        public const string SettingVehiclesUseATTOverridesLabel                             = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesUseATTOverrides]";
-        public const string SettingVehiclesUseATTOverridesDesc                              = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesUseATTOverrides]";
+        public const string SettingVehiclesOverridesEnabledLabel                            = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesOverridesEnabled]";
+        public const string SettingVehiclesOverridesEnabledDesc                             = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesOverridesEnabled]";
         public const string SettingVehiclesCommercialLabel                                  = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesCommercial]";
         public const string SettingVehiclesCommercialDesc                                   = "Options.OPTION_DESCRIPTION[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesCommercial]";
         public const string SettingVehiclesExtractorLabel                                   = "Options.OPTION" +        "[ChangeCompany.ChangeCompany.Mod.ModSettings.VehiclesExtractor]";
