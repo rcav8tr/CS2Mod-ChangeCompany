@@ -367,10 +367,10 @@ The following mods were used in the development of this mod:
     <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/change-company.1808488/" />
 
     <!-- Version of the mod.  Copied from assembly Version. -->
-    <ModVersion Value="4.1.1" />
+    <ModVersion Value="4.1.2" />
 
     <!-- Recommended version of the base game to use the mod. -->
-    <GameVersion Value="1.6.0*" />
+    <GameVersion Value="1.6.2*" />
 
     <!-- Dependency for the mod.  Can be set multiple times. -->
     <Dependency Id="" />
@@ -381,7 +381,7 @@ The following mods were used in the development of this mod:
 
     <!-- Change log.  Copied from ChangeLog.md file.  Supports minimal markdown subset. -->
     <ChangeLog>
-- Add ability to disable overrides for company storage and vehicles.
+- Update for game version 1.6.2.
 </ChangeLog>
 
     <!-- External links.  Can be set multiple times. -->

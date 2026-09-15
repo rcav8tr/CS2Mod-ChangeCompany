@@ -1,1 +1,1 @@
-﻿- Add ability to disable overrides for company storage and vehicles.
+﻿- Update for game version 1.6.2.
