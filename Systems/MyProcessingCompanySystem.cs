@@ -36,7 +36,7 @@ namespace ChangeCompany
     /// </summary>
     public partial class MyProcessingCompanySystem : GameSystemBase //, IDefaultSerializable, ISerializable, IPostDeserialize
     {
-        // This system is a copy of decompiled Game.Simulation.ProcessingCompanySystem as of 1.5.7 except generally:
+        // This system is a copy of decompiled Game.Simulation.ProcessingCompanySystem as of 1.6.2 except generally:
         //      System's logic is run on demand, not periodically in a system phase.
         //      Avoid creating and being subject to all other dependencies.
         //      Do all companies at once, ignoring update frame.
@@ -150,7 +150,9 @@ namespace ChangeCompany
             // The outer array is one for each possible thread.
             // The inner array is one for each company processed on that thread.
             // Even though the outer array is read only, entries can still be updated in the inner list.
+            // Company productions are needed only for the Change Company mod.
             [ReadOnly] public NativeArray<NativeList<CompanyProduction>> m_CompanyProductions;
+            [ReadOnly] public bool m_IsChangeCompanyMod;
 
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
@@ -308,9 +310,12 @@ namespace ChangeCompany
                         resources2 = EconomyUtils.GetResources(output.m_Resource, resources);
                     }
 
-                    // Save production for this company, even if zero.
-                    NativeList<CompanyProduction> companyProductionsForThread = m_CompanyProductions[threadIndex];
-                    companyProductionsForThread.Add(new CompanyProduction { Company = entity, Production = num * EconomyUtils.kCompanyUpdatesPerDay });
+                    // For Change Company mod, save production for this company, even if zero.
+                    if (m_IsChangeCompanyMod)
+                    {
+                        NativeList<CompanyProduction> companyProductionsForThread = m_CompanyProductions[threadIndex];
+                        companyProductionsForThread.Add(new CompanyProduction { Company = entity, Production = num * EconomyUtils.kCompanyUpdatesPerDay });
+                    }
 
                     //int num11 = EconomyUtils.GetCompanyProfitPerDay(buildingEfficiency, !flag, bufferAccessor2[i], industrialProcessData, m_ResourcePrefabs, ref m_ResourceDatas, ref m_Citizens, ref m_EconomyParameters, serviceAvailable, serviceCompanyData) / EconomyUtils.kCompanyUpdatesPerDay;
                     //TaxPayer value = nativeArray5[i];
@@ -577,6 +582,7 @@ namespace ChangeCompany
         // The inner array is one for each company processed on that thread.
         // Even though the outer array is read only, entries can still be updated in the inner list.
         private NativeArray<NativeList<CompanyProduction>> _companyProductions;
+        private bool _isChangeCompanyMod;
 
         public override int GetUpdateInterval(SystemUpdatePhase phase)
         {
@@ -614,14 +620,18 @@ namespace ChangeCompany
             _productionAmounts  = ProductionConsumptionUtils.CreateArrays();
             _consumptionAmounts = ProductionConsumptionUtils.CreateArrays();
 
-            // Create arrays for company productions.
-            // Arrays and lists are persistent so they do not need to be created and expanded each time the production balance check runs.
-            int threadCount = JobsUtility.ThreadIndexCount;
-            _companyProductions = new(threadCount, Allocator.Persistent);
-            for (int i = 0; i < threadCount; i++)
+            // For Change Company mod, create arrays for company productions.
+            // Arrays and lists are persistent so they do not need to be created and expanded each time data is obtained.
+            _isChangeCompanyMod = GetType().Namespace == "ChangeCompany";
+            if (_isChangeCompanyMod)
             {
-                // Inner lists start with a default initial capacity.
-                _companyProductions[i] = new(32, Allocator.Persistent);
+                int threadCount = JobsUtility.ThreadIndexCount;
+                _companyProductions = new(threadCount, Allocator.Persistent);
+                for (int i = 0; i < threadCount; i++)
+                {
+                    // Inner lists start with a default initial capacity.
+                    _companyProductions[i] = new(32, Allocator.Persistent);
+                }
             }
         }
 
@@ -656,11 +666,14 @@ namespace ChangeCompany
             //m_ProducedResources.Dispose();
             ProductionConsumptionUtils.DisposeArrays(in _productionAmounts);
             ProductionConsumptionUtils.DisposeArrays(in _consumptionAmounts);
-            foreach (NativeList<CompanyProduction> companyProductionList in _companyProductions)
+            if (_isChangeCompanyMod)
             {
-                companyProductionList.Dispose();
+                foreach (NativeList<CompanyProduction> companyProductionList in _companyProductions)
+                {
+                    companyProductionList.Dispose();
+                }
+                _companyProductions.Dispose();
             }
-            _companyProductions.Dispose();
             base.OnDestroy();
         }
 
@@ -686,10 +699,13 @@ namespace ChangeCompany
             // Clear company productions.
             // When a NativeList is cleared, capacity remains the same.
             // So once increased, the capacity never decreases, as desired
-            // so list capacity does not need to be expanded each time production balance check runs.
-            foreach (NativeList<CompanyProduction> companyProduction in _companyProductions)
+            // so list capacity does not need to be expanded each time data is obtained.
+            if (_isChangeCompanyMod)
             {
-                companyProduction.Clear();
+                foreach (NativeList<CompanyProduction> companyProduction in _companyProductions)
+                {
+                    companyProduction.Clear();
+                }
             }
 
             uint updateFrame = SimulationUtils.GetUpdateFrame(m_SimulationSystem.frameIndex, EconomyUtils.kCompanyUpdatesPerDay, 16);
@@ -735,6 +751,7 @@ namespace ChangeCompany
                 m_ProductionAmounts  = _productionAmounts,
                 m_ConsumptionAmounts = _consumptionAmounts,
                 m_CompanyProductions = _companyProductions,
+                m_IsChangeCompanyMod = _isChangeCompanyMod,
             };
             //base.Dependency = JobChunkExtensions.ScheduleParallel(jobData, m_CompanyGroup, JobUtils.CombineDependencies(m_ProducedResourcesDeps, deps, deps2, deps3, base.Dependency));
             base.Dependency = JobChunkExtensions.ScheduleParallel(jobData, m_CompanyGroup, base.Dependency);
@@ -753,14 +770,17 @@ namespace ChangeCompany
             ProductionConsumptionUtils.ConsolidateValues(in _productionAmounts,  out productionAmounts);
             ProductionConsumptionUtils.ConsolidateValues(in _consumptionAmounts, out consumptionAmounts);
 
-            // Consolidate company productions.
+            // For Change Company mod, consolidate company productions.
             companyProductions = new();
-            for (int i = 0; i < _companyProductions.Length; i++)
+            if (_isChangeCompanyMod)
             {
-                var companyProduction = _companyProductions[i];
-                for (int j = 0; j < companyProduction.Length; j++)
+                for (int i = 0; i < _companyProductions.Length; i++)
                 {
-                    companyProductions.Add(companyProduction[j].Company, companyProduction[j].Production);
+                    var companyProduction = _companyProductions[i];
+                    for (int j = 0; j < companyProduction.Length; j++)
+                    {
+                        companyProductions.Add(companyProduction[j].Company, companyProduction[j].Production);
+                    }
                 }
             }
         }

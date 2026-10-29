@@ -1,1 +1,2 @@
-﻿- Update for game version 1.6.2.
+﻿- For Production Balance, use average production and surplus/deficit over 1 game day.
+- When Production Balance is disabled, display "Disabled" for next check date/time.

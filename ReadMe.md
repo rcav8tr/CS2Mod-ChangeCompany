@@ -71,6 +71,12 @@ When enabled (see **Options** below), production of industrial and office resour
 are automatically balanced according to the surplus or deficit of the resources.
 See **Retrictions** below.
 
+Resource consumption can change drastically over the course of one game day.
+For example, Food, Beverages, and Telecom are consumed more during the day than at night.
+Therefore, the production and surplus values used for Production Balance are the average over one game day.
+This helps prevent Production Balance from trying to keep up with the consumption changes during the game day.
+But this can also make Production Balance slower to react to company changes.
+
 On the **Check Interval** you choose (see **Options** below), the following is automatically performed
 once for industrial resources and once for office resources:
 - Determine the resource that has the highest surplus.
@@ -106,8 +112,6 @@ Some of these restrictions and rules are to prevent excessive company changes wh
 The current statistics computed by production balance are displayed on the **Production Balance Statistics** screen.
 The screen can be displayed by clicking on the activaton button in the upper left or by pressing the keyboard shortcut (see **Options** below).
 You can use the statistics to help when deciding if or how to adjust the production balance options.
-
-Companies and Standard Deviation statistics require the simulation to run a bit for the values to be calculated and displayed.
 The last change statistics are only since the game was loaded and are displayed only after a production balance is successfully performed.
 
 

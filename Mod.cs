@@ -51,9 +51,6 @@ namespace ChangeCompany
                 // Initialize translations.
                 Translation.Initialize();
 
-                // Initialize production and surplus.
-                ProductionSurplus.Initialize();
-
                 // Add mod UI images directory to UI resource handler.
                 // When the URI is used to access an image, the game forces the URI portion to lower case.
                 // So make the URI lower case here to be compatible.
@@ -153,6 +150,8 @@ namespace ChangeCompany
                 // Run after the TimeSystem which updates the game date/time.
                 updateSystem.UpdateAfter<ProductionBalanceSystem, TimeSystem>(SystemUpdatePhase.GameSimulation);
                 updateSystem.UpdateAt<ProductionBalanceUISystem>(SystemUpdatePhase.UIUpdate);
+                updateSystem.UpdateAfter<CityResourceUsageSystem, CityProductionStatisticSystem>(SystemUpdatePhase.GameSimulation);
+                updateSystem.UpdateAfter<ProductionSurplusSystem, CityResourceUsageSystem>(SystemUpdatePhase.GameSimulation);
 
                 // Create this mod's company workplaces systems.
                 // These systems do not run in a system update phase and do nothing in their OnUpdate.
@@ -182,7 +181,7 @@ namespace ChangeCompany
                 //    if (!keyValue.Key.StartsWith("Assets."))
                 //    {
                 //        //if (keyValue.Value.ToLower().Contains("no data"))
-                //        if (keyValue.Value.ToLower() == "vehicles")
+                //        if (keyValue.Value.ToLower() == "disabled")
                 //        //if (keyValue.Key.ToLower().Contains("value_ton"))
                 //        {
                 //            log.Info(keyValue.Key + "\t" + keyValue.Value);

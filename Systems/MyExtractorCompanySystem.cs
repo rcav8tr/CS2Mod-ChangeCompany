@@ -38,7 +38,7 @@ namespace ChangeCompany
     /// </summary>
     public partial class MyExtractorCompanySystem : GameSystemBase
     {
-        // This system is a copy of decompiled Game.Simulation.ExtractorCompanySystem as of 1.5.7 except generally:
+        // This system is a copy of decompiled Game.Simulation.ExtractorCompanySystem as of 1.6.2 except generally:
         //      System's logic is run on demand, not periodically in a system phase.
         //      Avoid creating and being subject to all other dependencies.
         //      Do all companies at once, ignoring update frame.
@@ -233,9 +233,7 @@ namespace ChangeCompany
                         continue;
                     }
                     Entity parent = m_Attached[property].m_Parent;
-                    float concentration;
-                    float size;
-                    bool bestConcentration = GetBestConcentration(processData.m_Output.m_Resource, parent, ref m_SubAreas, ref m_InstalledUpgrades, ref m_ExtractorAreas, ref m_GeometryData, ref m_Prefabs, ref m_ExtractorAreaDatas, m_ExtractorParameters, m_ResourcePrefabs, ref m_ResourceDatas, out concentration, out size);
+                    bool bestConcentration = GetBestConcentration(processData.m_Output.m_Resource, parent, ref m_SubAreas, ref m_InstalledUpgrades, ref m_ExtractorAreas, ref m_GeometryData, ref m_Prefabs, ref m_ExtractorAreaDatas, m_ExtractorParameters, m_ResourcePrefabs, ref m_ResourceDatas, out var concentration, out var size);
                     float buildingEfficiency = 1f;
                     if (m_BuildingEfficiencies.TryGetBuffer(property, out var bufferData))
                     {
@@ -415,13 +413,13 @@ namespace ChangeCompany
                                 }
                             }
                         }
-                        if (flag && flag2)
+                        if (flag & flag2)
                         {
                             break;
                         }
                     }
                 }
-                return flag && flag2;
+                return flag & flag2;
             }
 
             //private unsafe void AddProducedResource(Resource resource, int amount)
@@ -448,8 +446,7 @@ namespace ChangeCompany
                 float num = totalProduced * componentData2.m_SurfaceArea / math.max(1f, totalConcentration * totalSize);
                 float num2 = 1f;
                 Entity prefab = m_Prefabs[area].m_Prefab;
-                ExtractorAreaData componentData3;
-                bool flag = m_ExtractorAreaDatas.TryGetComponent(prefab, out componentData3);
+                bool flag = m_ExtractorAreaDatas.TryGetComponent(prefab, out var componentData3);
                 if (flag)
                 {
                     num2 = componentData3.m_WorkAmountFactor;
@@ -708,8 +705,7 @@ namespace ChangeCompany
         {
             concentration = 0f;
             size = 0f;
-            ResourceData componentData;
-            bool requireNaturalResource = resourceDatas.TryGetComponent(resourcePrefabs[resource], out componentData) && componentData.m_RequireNaturalResource;
+            bool requireNaturalResource = resourceDatas.TryGetComponent(resourcePrefabs[resource], out var componentData) && componentData.m_RequireNaturalResource;
             if (subAreas.TryGetBuffer(mainBuilding, out var bufferData))
             {
                 GetBestConcentration(bufferData, ref extractors, ref geometries, ref prefabs, ref extractorDatas, extractorParameters, requireNaturalResource, ref concentration, ref size);

@@ -11,9 +11,6 @@ namespace ChangeCompany
     /// </summary>
     public static class ProductionConsumptionUtils
     {
-        // Get resource count only once.
-        private static readonly int ResourceCount = EconomyUtils.ResourceCount;
-
         /// <summary>
         /// Create nested native arrays to hold production and consumption amounts and counts.
         /// </summary>
@@ -36,7 +33,7 @@ namespace ChangeCompany
             for (int i = 0; i < threadCount; i++)
             {
                 // Inner array is one for each resource.
-                nestedArrays[i] = new(ResourceCount, Allocator.Persistent);
+                nestedArrays[i] = new(ProductionSurplusSystem.ResourceCount, Allocator.Persistent);
             }
 
             // Return the nested arrays.
@@ -100,7 +97,7 @@ namespace ChangeCompany
         public static void ConsolidateValues(in NativeArray<NativeArray<int>> nestedArrays, out int[] consolidatedValues)
         {
             // Initialize return array, one for each resource.
-            consolidatedValues = new int[ResourceCount];
+            consolidatedValues = new int[ProductionSurplusSystem.ResourceCount];
 
             // Do each thread entry in the outer array.
             foreach (NativeArray<int> innerArray in nestedArrays)

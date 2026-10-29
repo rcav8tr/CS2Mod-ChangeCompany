@@ -15,10 +15,7 @@ namespace ChangeCompany
         private bool        _isIndustrial;
 
         // The production balance info.
-        public bool         CompanyCountValid;
         public int          CompanyCount;
-
-        public bool         StandardDeviationValid;
         public double       StandardDeviationPercent;
 
         public GameDateTime LastChangeDateTime = new();
@@ -53,10 +50,7 @@ namespace ChangeCompany
             {
                 _isIndustrial               = this._isIndustrial,
 
-                CompanyCountValid           = this.CompanyCountValid,
                 CompanyCount                = this.CompanyCount,
-
-                StandardDeviationValid      = this.StandardDeviationValid,
                 StandardDeviationPercent    = this.StandardDeviationPercent,
 
                 LastChangeDateTime          = this.LastChangeDateTime.Copy(),
@@ -81,9 +75,7 @@ namespace ChangeCompany
 
             // Format company count.
             const string CompanyCountFormat = "N0";
-            string formattedCompanyCount = CompanyCountValid ?
-                CompanyCount.ToString(CompanyCountFormat, currentCulture) :
-                Translation.Get("EconomyPanel.NO_PRODUCTION_DATA");
+            string formattedCompanyCount = CompanyCount.ToString(CompanyCountFormat, currentCulture);
 
             // Format minimum companies.
             string formattedMinimumCompanies = _isIndustrial ?
@@ -92,10 +84,8 @@ namespace ChangeCompany
 
             // Format standard deviation percent.
             // All languages use same percent symbol.
-            string standardDeviationPercentFormat = StandardDeviationValid && StandardDeviationPercent < 200d ? "N1" : "N0";
-            string formattedStandardDeviation = StandardDeviationValid ?
-                StandardDeviationPercent.ToString(standardDeviationPercentFormat, currentCulture) + " %" :
-                Translation.Get("EconomyPanel.NO_PRODUCTION_DATA");
+            string standardDeviationPercentFormat = StandardDeviationPercent < 200d ? "N1" : "N0";
+            string formattedStandardDeviation = StandardDeviationPercent.ToString(standardDeviationPercentFormat, currentCulture) + " %";
 
             // Format minimum standard deviation percent.
             // All languages use same percent symbol.
@@ -127,9 +117,10 @@ namespace ChangeCompany
 			writer.PropertyName("lastChangeToResource");
 			writer.Write(LastChangeToResource.ToString());
 
-            // Write formatted next check date/time.
+            // Write formatted next check data.
+            bool enabled = (_isIndustrial ? Mod.ModSettings.ProductionBalanceEnabledIndustrial : Mod.ModSettings.ProductionBalanceEnabledOffice);
             writer.PropertyName("nextCheckDateTime");
-            writer.Write(NextCheckDateTime.FormatForUI());
+            writer.Write(enabled ? NextCheckDateTime.FormatForUI() : Translation.Get("Options.LEVEL[Disabled]"));
 
             // Write testing info.
             writer.PropertyName("standardDeviation");

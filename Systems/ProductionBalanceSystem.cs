@@ -1,4 +1,5 @@
 ﻿using Colossal.Entities;
+using Colossal.Serialization.Entities;
 using Game;
 using Game.Agents;
 using Game.Buildings;
@@ -228,6 +229,7 @@ namespace ChangeCompany
         // Other systems.
         private ChangeCompanySection    _changeCompanySection;
         private ChangeCompanySystem     _changeCompanySystem;
+        private ProductionSurplusSystem _productionSurplusSystem;
         private ResourceSystem          _resourceSystem;
         private TimeSystem              _timeSystem;
 
@@ -283,6 +285,9 @@ namespace ChangeCompany
         // Whether or not this system is initialized.
         private bool _initialized;
 
+        // Whether or not this is the first run of OnUpdate.
+        private bool _onUpdateFirstRun;
+
         // Data and lookups for computing information about a company.
         private ResourcePrefabs                     _resourcePrefabs;
         private BufferLookup<LayoutElement>         _bufferLookupLayoutElement;
@@ -325,12 +330,13 @@ namespace ChangeCompany
                 Mod.log.Info($"{nameof(ProductionBalanceSystem)}.{nameof(OnCreate)}");
 
                 base.OnCreate();
-            
+
                 // Get other systems.
-                _changeCompanySection = World.GetOrCreateSystemManaged<ChangeCompanySection>();
-                _changeCompanySystem  = World.GetOrCreateSystemManaged<ChangeCompanySystem >();
-                _resourceSystem       = World.GetOrCreateSystemManaged<ResourceSystem      >();
-                _timeSystem           = World.GetOrCreateSystemManaged<TimeSystem          >();
+                _changeCompanySection    = World.GetOrCreateSystemManaged<ChangeCompanySection   >();
+                _changeCompanySystem     = World.GetOrCreateSystemManaged<ChangeCompanySystem    >();
+                _productionSurplusSystem = World.GetOrCreateSystemManaged<ProductionSurplusSystem>();
+                _resourceSystem          = World.GetOrCreateSystemManaged<ResourceSystem         >();
+                _timeSystem              = World.GetOrCreateSystemManaged<TimeSystem             >();
 
                 // Create arrays of lists to hold industrial and office company detail.
                 // Arrays and lists are persistent so they do not need to be created and expanded each time the production balance check runs.
@@ -388,7 +394,7 @@ namespace ChangeCompany
         /// Called by the game when a GameMode is done being loaded.
         /// </summary>
         [Preserve]
-        protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
+        protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
         {
             base.OnGameLoadingComplete(purpose, mode);
 
@@ -398,6 +404,11 @@ namespace ChangeCompany
                 // Initialize production balance infos.
                 _productionBalanceInfoIndustrial = new(true);
                 _productionBalanceInfoOffice     = new(false);
+
+                // Do one run of OnUpdate to initialize production balance infos displayed by UI.
+                // First run flag prevents production balance from actually being performed.
+                _onUpdateFirstRun = true;
+                OnUpdate();
 
                 // Initialize production balance next check.
                 SetProductionBalanceNextCheckIndustrial();
@@ -421,7 +432,7 @@ namespace ChangeCompany
             try
             {
                 // Get resource surpluses for industrial, office, and all.
-                bool resourceSurplusesValid = GetResourceSurpluses(
+                GetResourceSurpluses(
                     out ResourceSurpluses resourceSurplusesIndustrial,
                     out ResourceSurpluses resourceSurplusesOffice,
                     out ResourceSurpluses resourceSurplusesAll,
@@ -455,7 +466,6 @@ namespace ChangeCompany
                     _productionBalanceNextCheckLockIndustrial,
                     resourceSurplusesIndustrial,
                     resourceSurplusesAll,
-                    resourceSurplusesValid,
                     companyDetailsIndustrial,
                     _productionBalanceInfoIndustrial,
                     _productionBalanceInfoLockIndustrial);
@@ -472,10 +482,12 @@ namespace ChangeCompany
                     _productionBalanceNextCheckLockOffice,
                     resourceSurplusesOffice,
                     resourceSurplusesAll,
-                    resourceSurplusesValid,
                     companyDetailsOffice,
                     _productionBalanceInfoOffice,
                     _productionBalanceInfoLockOffice);
+
+                // Next run of OnUpdate is not first.
+                _onUpdateFirstRun = false;
             }
             catch (Exception ex)
             {
@@ -597,7 +609,7 @@ namespace ChangeCompany
         /// <summary>
         /// Get surplus amounts by resource for industrial, office, and all.
         /// </summary>
-        private bool GetResourceSurpluses(
+        private void GetResourceSurpluses(
             out ResourceSurpluses resourceSurplusesIndustrial,
             out ResourceSurpluses resourceSurplusesOffice,
             out ResourceSurpluses resourceSurplusesAll,
@@ -608,32 +620,32 @@ namespace ChangeCompany
             resourceSurplusesOffice     = new();
             resourceSurplusesAll        = new();
 
-            // It is desired to use the same production/consumption data as the Production tab of the Economy view.
-            // The Production tab data comes from the ProductionUISystem.
-            // But ProductionUISystem updates only 32 times per game day, which is one update every 45 game minutes.
-            // Get production and surplus amounts now.
-            if (!ProductionSurplus.GetAmounts(out int[] productionAmounts, out int[] surplusAmounts, out companyProductions))
-            {
-                return false;
-            }
+            // Get production and surplus amounts.
+            // Ignore current production and surplus, only average is used.
+            _productionSurplusSystem.GetAmounts(
+                out _,
+                out _,
+                out int[] averageProductions,
+                out int[] averageSurpluses,
+                out companyProductions);
 
             // Get resource surpluses for industrial.
             foreach (Resource resource in _resourcesIndustrial)
             {
-                resourceSurplusesIndustrial.Add(GetResourceSurplus(resource, productionAmounts, surplusAmounts));
+                resourceSurplusesIndustrial.Add(GetResourceSurplus(resource, in averageProductions, in averageSurpluses));
             }
 
             // Get resource surpluses for office.
             foreach (Resource resource in _resourcesOffice)
             {
-                resourceSurplusesOffice.Add(GetResourceSurplus(resource, productionAmounts, surplusAmounts));
+                resourceSurplusesOffice.Add(GetResourceSurplus(resource, in averageProductions, in averageSurpluses));
             }
 
             // Get resource surpluses for all.
             // Extraction is included in All, even though extraction is not returned by itself.
             foreach (Resource resource in _resourcesExtraction)
             {
-                resourceSurplusesAll.Add(GetResourceSurplus(resource, productionAmounts, surplusAmounts));
+                resourceSurplusesAll.Add(GetResourceSurplus(resource, in averageProductions, in averageSurpluses));
             }
             resourceSurplusesAll.AddRange(resourceSurplusesIndustrial);
             resourceSurplusesAll.AddRange(resourceSurplusesOffice);
@@ -642,23 +654,20 @@ namespace ChangeCompany
             resourceSurplusesIndustrial.Sort();
             resourceSurplusesOffice    .Sort();
             resourceSurplusesAll       .Sort();
-
-            // Success
-            return true;
         }
 
         /// <summary>
         /// Get the surplus amount for a resource.
         /// </summary>
-        private ResourceSurplus GetResourceSurplus(Resource resource, int[] productionAmounts, int[] surplusAmounts)
+        private ResourceSurplus GetResourceSurplus(Resource resource, in int[] averageProductions, in int[] averageSurpluses)
         {
-            // Return the resource production and surplus amounts.
+            // Return the average resource production and surplus amounts from history.
             int resourceIndex = EconomyUtils.GetResourceIndex(resource);
             return new()
             {
                 Resource   = resource,
-                Production = productionAmounts[resourceIndex],
-                Surplus    = surplusAmounts   [resourceIndex],
+                Production = averageProductions[resourceIndex],
+                Surplus    = averageSurpluses  [resourceIndex],
             };
         }
 
@@ -676,7 +685,6 @@ namespace ChangeCompany
             object productionBalanceNextCheckLock,
             ResourceSurpluses resourceSurpluses,
             ResourceSurpluses resourceSurplusesAll,
-            bool resourceSurplusesValid,
             CompanyDetails companyDetails,
             ProductionBalanceInfo productionBalanceInfo,
             object productionBalanceInfoLock)
@@ -697,16 +705,16 @@ namespace ChangeCompany
             {
                 // Production balance info is computed and written even if production balance is disabled.
                 // This allows the UI to display the info even when production balance is disabled or it is not yet time to do production balance.
-                productionBalanceInfo.CompanyCountValid = true;
                 productionBalanceInfo.CompanyCount = companyDetails.Count;
-                productionBalanceInfo.StandardDeviationValid = resourceSurplusesValid;
                 productionBalanceInfo.StandardDeviationPercent = standardDeviationPercent;
                 productionBalanceInfo.StandardDeviation = standardDeviation;
                 productionBalanceInfo.AverageProduction = averageProduction;
             }
             
-            // Production balance must be enabled.
-            if (settingProductionBalanceEnabled)
+            // Production balance must be enabled and not first run of OnUpdate.
+            // First run of OnUpdate is just to initialize the above production balance info.
+            // But a production balance should not be performed on that first run.
+            if (settingProductionBalanceEnabled && !_onUpdateFirstRun)
             {
                 // Lock thread while reading next check date/time.
                 bool isTimeToDoProductionBalance;
@@ -723,10 +731,8 @@ namespace ChangeCompany
                 {
                     // It is time to do production balance.
 
-                    // Resource surpluses must be valid.
                     // Must meet minimum company count and meet minimum standard deviation percent.
-                    if (resourceSurplusesValid &&
-                        companyDetails.Count     >= settingProductionBalanceMinimumCompanies &&
+                    if (companyDetails.Count     >= settingProductionBalanceMinimumCompanies &&
                         standardDeviationPercent >= settingProductionBalanceMinimumStandardDeviation)
                     {
                         // Now, finally, try to do a production balance.

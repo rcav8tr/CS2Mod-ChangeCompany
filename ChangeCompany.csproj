@@ -9,7 +9,7 @@
         <!--The file where mod information which is required for publishing mod on PDX mods are stored-->
         <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
         <Title>Change Company</Title>
-        <Version>4.1.2</Version>
+        <Version>4.2.0</Version>
         <Description>Mod with 6 main features: Change Company, Production Balance, Lock Company, Company Workplaces, Company Storage, and Company Vehicles.</Description>
         <Copyright>Copyright © 2025-2026</Copyright>
         <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
@@ -122,6 +122,10 @@
     </ItemGroup>
     <ItemGroup>
       <PackageReference Include="Lib.Harmony" Version="2.2.2" />
+      <PackageReference Include="Microsoft.Unity.Analyzers" Version="1.28.0">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
     </ItemGroup>
     
     <ItemGroup>
