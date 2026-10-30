@@ -366,8 +366,9 @@ namespace ChangeCompany
                     for (int resourceIndex = 0; resourceIndex < ResourceCount; resourceIndex++)
                     {
                         // Compute total production and surplus over the rows.
-                        int totalProduction = 0;
-                        int totalSurplus    = 0;
+                        // Must compute total as long because total can exceed max int in large cities.
+                        long totalProduction = 0L;
+                        long totalSurplus    = 0L;
                         for (int row = 0; row < rows; row++)
                         {
                             ResourceHistoryElement resourceHistoryElement = GetResourceHistoryElement(in buffer, row, resourceIndex);
@@ -376,8 +377,8 @@ namespace ChangeCompany
                         }
 
                         // Compute average production and surplus.
-                        averageProductions[resourceIndex] = totalProduction / rows;
-                        averageSurpluses  [resourceIndex] = totalSurplus    / rows;
+                        averageProductions[resourceIndex] = (int)(totalProduction / rows);
+                        averageSurpluses  [resourceIndex] = (int)(totalSurplus    / rows);
                     }
                 }
             }

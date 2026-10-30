@@ -371,7 +371,7 @@ The following mods were used in the development of this mod:
     <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/change-company.1808488/" />
 
     <!-- Version of the mod.  Copied from assembly Version. -->
-    <ModVersion Value="4.2.0" />
+    <ModVersion Value="4.2.1" />
 
     <!-- Recommended version of the base game to use the mod. -->
     <GameVersion Value="1.6.2*" />
@@ -385,8 +385,7 @@ The following mods were used in the development of this mod:
 
     <!-- Change log.  Copied from ChangeLog.md file.  Supports minimal markdown subset. -->
     <ChangeLog>
-- For Production Balance, use average production and surplus/deficit over 1 game day.
-- When Production Balance is disabled, display "Disabled" for next check date/time.
+- Prevent integer overflow on large cities.
 </ChangeLog>
 
     <!-- External links.  Can be set multiple times. -->
