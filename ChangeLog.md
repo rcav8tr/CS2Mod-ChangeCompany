@@ -1,1 +1,1 @@
-﻿- Prevent integer overflow on large cities.
+﻿- Include resource history statistics when in developer mode.

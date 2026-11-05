@@ -1,7 +1,9 @@
 ﻿using Colossal.Serialization.Entities;
+using Colossal.UI.Binding;
 using Game;
 using Game.Economy;
 using Game.Simulation;
+using Game.UI;
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
@@ -14,7 +16,7 @@ namespace ChangeCompany
     /// Production and surplus amounts by resource.
     /// This system is used in Resource Locator and Change Company mods.
     /// </summary>
-    public partial class ProductionSurplusSystem : GameSystemBase
+    public partial class ProductionSurplusSystem : UISystemBase
     {
         // Define resource count from EconomyUtils.ResourceCount.
         // This system checks if the game has changed from this value.
@@ -28,13 +30,19 @@ namespace ChangeCompany
         private int[] _currentProductions;
         private int[] _currentSurpluses;
         private Dictionary<Entity, int> _companyProductions;
-        private readonly object _dataLock = new object();
+        private readonly object _dataLock = new();
 
         // Other systems.
         private MyProcessingCompanySystem     _myProcessingCompanySystem;
         private MyExtractorCompanySystem      _myExtractorCompanySystem;
         private CityResourceUsageSystem       _cityResourceUsageSystem;
         private CityProductionStatisticSystem _cityProductionStatisticSystem;
+        private TimeSystem                    _timeSystem;
+
+        // Resource history development mode info.
+        private int _rowsCurrent;
+        private string _rowLastAdded;
+        private RawValueBinding _bindingResourceHistoryDevInfo;
 
         /// <summary>
         /// Set update interval.
@@ -105,6 +113,11 @@ namespace ChangeCompany
             // Get other systems.
             _cityResourceUsageSystem       = World.GetOrCreateSystemManaged<CityResourceUsageSystem>();
             _cityProductionStatisticSystem = World.GetOrCreateSystemManaged<CityProductionStatisticSystem>();
+            _timeSystem                    = World.GetOrCreateSystemManaged<TimeSystem>();
+
+            // Add C# to UI binding for resource history dev info.
+            AddBinding(_bindingResourceHistoryDevInfo = new RawValueBinding(ModAssemblyInfo.Name, "ResourceHistoryDevInfo", WriteResourceHistoryDevInfo));
+            ResetResourceHistoryDevInfo();
         }
 
         /// <summary>
@@ -120,6 +133,19 @@ namespace ChangeCompany
             {
                 EntityManager.DestroyEntity(resourceHistoryEntity);
             }
+
+            // Reset resource history dev info.
+            ResetResourceHistoryDevInfo();
+        }
+
+        /// <summary>
+        /// Reset resource history dev info.
+        /// </summary>
+        private void ResetResourceHistoryDevInfo()
+        {
+            _rowsCurrent = -1;
+            _rowLastAdded = "None";
+            _bindingResourceHistoryDevInfo.Update();
         }
 
         /// <summary>
@@ -135,6 +161,11 @@ namespace ChangeCompany
             {
                 // Initialize data by executing OnUpdate.
                 OnUpdate();
+
+                // Initialize current rows for resource history dev info.
+                DynamicBuffer<ResourceHistoryElement> buffer = GetResourceHistoryBuffer();
+                _rowsCurrent = ResourceHistoryRows(in buffer);
+                _bindingResourceHistoryDevInfo.Update();
             }
         }
 
@@ -306,6 +337,13 @@ namespace ChangeCompany
 
             // Save the new values.
             SaveNewResourceHistoryValues(in buffer);
+
+            // Save and update the resource history dev info.
+            // The game stores the month in DateTime.DayOfYear field.
+            DateTime currentDateTime = _timeSystem.GetCurrentDateTime();
+            _rowsCurrent = rows;
+            _rowLastAdded = $"{currentDateTime.Year}.{currentDateTime.DayOfYear:D2} {currentDateTime.Hour:D2}:{currentDateTime.Minute:D2}";
+            _bindingResourceHistoryDevInfo.Update();
         }
 
         /// <summary>
@@ -382,6 +420,22 @@ namespace ChangeCompany
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Write resource history development mode info to the UI.
+        /// </summary>
+        private void WriteResourceHistoryDevInfo(IJsonWriter writer)
+        {
+            // Write the resource history dev info to the UI.
+            writer.TypeBegin(ModAssemblyInfo.Name + ".ResourceHistoryDevInfo");
+            writer.PropertyName("rowsCurrent");
+            writer.Write(_rowsCurrent);
+            writer.PropertyName("rowsMaximum");
+            writer.Write(CityProdStatisticUpdatesPerDay);
+            writer.PropertyName("rowLastAdded");
+            writer.Write(_rowLastAdded);
+            writer.TypeEnd();
         }
     }
 }
